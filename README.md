@@ -1,16 +1,27 @@
-# UWPHook
+﻿# UWPHookNG
 
-[![](http://imgur.com/gWwR02D.png)](https://briano.dev/UWPHook/)
+> A modernized fork of [UWPHook](https://github.com/BrianLima/UWPHook) by Brian Lima — rebuilt for .NET 10 and current Windows builds.
 
-Small project to link UWP games and XboxGamePass to Steam
+Small project to link UWP / Microsoft Store / Xbox Game Pass games and apps to Steam.
 
-If you want to add Windows Store or Xbox Game Pass Games to Steam, you need to do a bit of a workaround because Steam can't see UWP apps, and there's a chance Steam won't show it on your "Currently playing" status. This app aims to simplify a little bit the process where it is possible by automating the scripting and launching of Windows Store apps and Xbox Game Pass games.
+If you want to add Windows Store or Xbox Game Pass Games to Steam, you need a bit of a workaround because Steam can't see UWP apps and won't always show them on your "Currently playing" status. This app automates that.
 
-# To add UWP or XGP games to Steam #
+## What's different from upstream
 
-[Download the latest version of UWPHook](https://github.com/BrianLima/UWPHook/releases) and store it somewhere on your PC.
+- Targets **.NET 10** (not .NET Framework 4.8). Works on Windows 10 1809+ and Windows 11.
+- UWP app discovery uses native **WinRT `PackageManager`** instead of hosting PowerShell in-process — much smaller publish output and faster startup.
+- Modernized stack: System.Text.Json (no Newtonsoft), System.Net.Http.Json (no WebApi.Client), `HttpClient` (no `WebClient`).
+- Atomic `shortcuts.vdf` writes with rolling backups under `%APPDATA%\Briano\UWPHook\backups\`.
+- SteamGridDB API key encrypted at rest with DPAPI.
+- New Xbox / Steam Big Picture-inspired dark UI with tile + list views.
+- Builds for **win-x64 and win-arm64**.
+- Test suite + CI with `dotnet test` on every push.
 
-Click on the 🔄 to load installed UWP Apps, we will find every UWP app and Xbox Game Pass game installed on your PC.
+## To add UWP or XGP games to Steam
+
+[Download the latest UWPHookNG release](https://github.com/cmerino01/UWPHookNG/releases) and store it somewhere on your PC.
+
+Click **Refresh** to load installed UWP apps. Every UWP app and Xbox Game Pass game on your PC will appear as a tile.
 
 ![](https://i.imgur.com/pjGfGHe.png)
 
@@ -103,11 +114,9 @@ The installation consists of zipping the application and creating some of the pa
 
 # About
 
-This software is open-source under the MIT License.
-It will mostly likely break withouth any heads up, since any API, file format, script and many other things used by it may be changed by Valve or Microsoft withouth prior notice.
+UWPHookNG is open-source under the MIT License (see `LICENSE`).
 
-I am not responsible if anything breaks.
+- Original UWPHook © 2014–2024 [Brian Lima](https://github.com/BrianLima) — without his work this fork wouldn't exist. If you'd like to support him, [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=9YPV3FHEFRAUQ).
+- UWPHookNG modifications © 2026 [merinocodes](https://github.com/cmerino01).
 
-If you like what i did with it and want to suport me, you can cheer me up at my [Twitter](http://www.twitter.com/brianostorm "Twitter") or [pay me a coffee via Paypal, it will help me to continue to build amazing open source tools for you!"](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=9YPV3FHEFRAUQ)
-
-Thanks for your support, and game on!
+This is a personal fork. APIs, file formats, scripts and the things UWPHookNG depends on can change without notice; expect breakage if Microsoft or Valve change something underneath. No warranty.

@@ -49,6 +49,13 @@ public class AppEntry : INotifyPropertyChanged
     /// </summary>
     public string? IconPath { get; set; }
 
+    /// <summary>
+    /// True when the underlying package looks like a game (e.g. ships a MicrosoftGame.Config
+    /// or had to resolve its executable through the Game launcher fallback). Used by the
+    /// "Games only" toolbar filter.
+    /// </summary>
+    public bool IsGame { get; set; }
+
     public string widestSquareIcon()
     {
         var result = string.Empty;

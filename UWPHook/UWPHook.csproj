@@ -15,16 +15,16 @@
 		<RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
 		<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
 
-		<Product>UWPHook</Product>
-		<AssemblyTitle>UWPHook</AssemblyTitle>
-		<Description>Add your UWP games and apps to Steam!</Description>
-		<Company>Briano</Company>
-		<Authors>Brian Lima</Authors>
-		<Copyright>Copyright Brian Lima © 2020 2021 2022 2023 2024</Copyright>
-		<Trademark>Briano</Trademark>
-		<Version>2.14.2.0</Version>
-		<AssemblyVersion>2.14.2.0</AssemblyVersion>
-		<FileVersion>2.14.2.0</FileVersion>
+		<Product>UWPHookNG</Product>
+		<AssemblyTitle>UWPHookNG</AssemblyTitle>
+		<Description>Add your UWP and Xbox Game Pass games to Steam — modernized fork of UWPHook.</Description>
+		<Company>merinocodes</Company>
+		<Authors>merinocodes (fork); Brian Lima (original UWPHook)</Authors>
+		<Copyright>Copyright © 2014-2024 Brian Lima · Copyright © 2026 merinocodes</Copyright>
+		<Trademark></Trademark>
+		<Version>3.0.0.0</Version>
+		<AssemblyVersion>3.0.0.0</AssemblyVersion>
+		<FileVersion>3.0.0.0</FileVersion>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -17,7 +17,7 @@ public partial class SettingsWindow : Window
     {
         InitializeComponent();
 
-        Title = "UWPHook version " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString();
+        Title = "UWPHookNG version " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString();
 
         cultures_comboBox.ItemsSource = CultureInfo.GetCultures(CultureTypes.AllCultures).Select(c => c.TextInfo.CultureName);
         cultures_comboBox.SelectedItem = string.IsNullOrEmpty(Settings.Default.TargetLanguage) ? CultureInfo.CurrentCulture.TextInfo.CultureName : Properties.Settings.Default.TargetLanguage;
@@ -41,6 +41,15 @@ public partial class SettingsWindow : Window
         nfsw_comboBox.SelectedIndex = Properties.Settings.Default.SelectedSteamGridDB_nfsw;
         humor_comboBox.SelectedIndex = Properties.Settings.Default.SelectedSteamGridDB_Humor;
         tags_textBox.Text = Properties.Settings.Default.Tags;
+
+        // Theme: select the saved value (Auto/Dark/Light) so the dropdown reflects it.
+        var savedTheme = ThemeManager.ParseSelection(Properties.Settings.Default.Theme);
+        theme_comboBox.SelectedIndex = savedTheme switch
+        {
+            AppTheme.Dark => 1,
+            AppTheme.Light => 2,
+            _ => 0,
+        };
     }
 
 #pragma warning disable CA1416 // Validate platform compatibility
@@ -90,34 +99,54 @@ public partial class SettingsWindow : Window
         Properties.Settings.Default.SelectedSteamGridDB_nfsw = nfsw_comboBox.SelectedIndex;
         Properties.Settings.Default.SelectedSteamGridDB_Humor = humor_comboBox.SelectedIndex;
         Properties.Settings.Default.Tags = tags_textBox.Text;
+        Properties.Settings.Default.Theme = SelectedThemeTag();
         Properties.Settings.Default.Save();
         GamesWindow.SetLogLevel();
         this.Close();
     }
 
+    private string SelectedThemeTag()
+    {
+        if (theme_comboBox.SelectedItem is System.Windows.Controls.ComboBoxItem item && item.Tag is string tag)
+        {
+            return tag;
+        }
+        return "Auto";
+    }
+
+    private void theme_comboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        // Apply live so the user sees the result immediately. Persisted on Save.
+        if (!IsLoaded) return;
+        var selection = ThemeManager.ParseSelection(SelectedThemeTag());
+        ThemeManager.Apply(selection);
+    }
+
     private void Chip_Click(object sender, RoutedEventArgs e)
     {
-        OpenUrl("http://twitter.com/brianostorm");
+        // Credit the original UWPHook author.
+        OpenUrl("https://github.com/BrianLima/UWPHook");
     }
 
     private void Chip1_Click(object sender, RoutedEventArgs e)
     {
-        OpenUrl("http://github.com/brianlima");
+        OpenUrl("https://github.com/cmerino01/UWPHookNG");
     }
 
     private void Chip2_Click(object sender, RoutedEventArgs e)
     {
+        // Donate to the original author.
         OpenUrl("https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=9YPV3FHEFRAUQ");
     }
 
     private void update_button_Click(object sender, RoutedEventArgs e)
     {
-        OpenUrl("https://github.com/BrianLima/UWPHook/releases");
+        OpenUrl("https://github.com/cmerino01/UWPHookNG/releases");
     }
 
     private void help_button_Click(object sender, RoutedEventArgs e)
     {
-        OpenUrl("https://reddit.com/r/UWPHook/");
+        OpenUrl("https://github.com/cmerino01/UWPHookNG/issues");
     }
 
     private void clearAll_button_Click(object sender, RoutedEventArgs e)

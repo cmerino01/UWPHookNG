@@ -20,7 +20,8 @@ internal static class UwpAppEnumerator
 
     /// <summary>
     /// Returns one entry per launchable application using the format
-    /// <c>Name|LogoPath|AUMID|Executable</c> (matches the legacy PowerShell script's output).
+    /// <c>Name|LogoPath|AUMID|Executable|Kind</c>, where <c>Kind</c> is
+    /// "game" if the package is detected as a game (via MicrosoftGame.Config) and "app" otherwise.
     /// </summary>
     public static List<string> GetInstalledApps()
     {
@@ -84,6 +85,7 @@ internal static class UwpAppEnumerator
                 }
 
                 var familyName = package.Id.FamilyName;
+                var hasGameConfig = File.Exists(Path.Combine(installLocation, "MicrosoftGame.Config"));
 
                 foreach (var application in manifest.Descendants(AppxNs + "Application"))
                 {
@@ -94,13 +96,19 @@ internal static class UwpAppEnumerator
                     }
 
                     var executable = application.Attribute("Executable")?.Value ?? string.Empty;
+                    var executableViaGameConfig = false;
 
                     // Apps launched via the Microsoft Game launcher have no real executable in
                     // the manifest; fall back to MicrosoftGame.Config (Game Pass titles).
                     if (string.IsNullOrWhiteSpace(executable) ||
                         string.Equals(executable, "GameLaunchHelper.exe", StringComparison.OrdinalIgnoreCase))
                     {
-                        executable = TryReadGameConfigExecutable(installLocation) ?? executable;
+                        var fromConfig = TryReadGameConfigExecutable(installLocation);
+                        if (!string.IsNullOrWhiteSpace(fromConfig))
+                        {
+                            executable = fromConfig;
+                            executableViaGameConfig = true;
+                        }
                         if (string.IsNullOrWhiteSpace(executable))
                         {
                             continue;
@@ -123,7 +131,13 @@ internal static class UwpAppEnumerator
                     }
 
                     var aumid = $"{familyName}!{appId}";
-                    results.Add($"{displayName}|{logoPath}|{aumid}|{executable}");
+
+                    // Heuristic: an app is a "game" if MicrosoftGame.Config is present (canonical
+                    // XGP / MS Store-game signal) or if we had to resolve its executable through
+                    // the game launcher fallback above.
+                    var isGame = hasGameConfig || executableViaGameConfig;
+
+                    results.Add($"{displayName}|{logoPath}|{aumid}|{executable}|{(isGame ? "game" : "app")}");
                 }
             }
             catch (Exception e)

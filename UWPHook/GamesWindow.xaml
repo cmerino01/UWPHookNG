@@ -5,41 +5,503 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:local="clr-namespace:UWPHook"
-        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
-        Background="{DynamicResource MaterialDesignPaper}"
-        TextElement.FontWeight="Medium"
-        TextElement.FontSize="14"
-        FontFamily="Segoe UI Light"
-        mc:Ignorable="d"
-        Title="UWPHook" Height="600" Width="800" Icon="/Resources/hook2.ico" Loaded="Window_Loaded">
+        Title="UWPHookNG"
+        Height="720" Width="1200"
+        MinHeight="540" MinWidth="900"
+        Background="{DynamicResource BgBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
+        FontFamily="{DynamicResource UiFont}"
+        FontSize="13"
+        TextOptions.TextRenderingMode="ClearType"
+        TextOptions.TextFormattingMode="Ideal"
+        Icon="/Resources/hook2.ico"
+        Loaded="Window_Loaded"
+        mc:Ignorable="d">
+
+    <Window.Resources>
+        <local:AppEntryToBoxArtConverter x:Key="BoxArtConverter" />
+        <local:FirstLetterConverter x:Key="FirstLetterConverter" />
+        <local:StringToColorBrushConverter x:Key="StringToColorBrushConverter" />
+        <local:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+        <!-- Tile template: box art with selection state, used by the wrap panel -->
+        <DataTemplate x:Key="GameTileTemplate" DataType="{x:Type local:AppEntry}">
+            <Button Click="TileButton_Click"
+                    Tag="{Binding}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="0"
+                    Margin="6"
+                    Width="180"
+                    Height="260"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Cursor="Hand"
+                    Focusable="True">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <!-- Outer border holds the selection ring -->
+                            <Border x:Name="ring"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="3"
+                                    CornerRadius="14"
+                                    Padding="0">
+                                <Border x:Name="card"
+                                        Background="{DynamicResource SurfaceBrush}"
+                                        CornerRadius="11"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        ClipToBounds="True">
+                                    <!-- Mask child visuals to the same rounded rect as the card. -->
+                                    <Border.OpacityMask>
+                                        <VisualBrush>
+                                            <VisualBrush.Visual>
+                                                <Border Background="Black"
+                                                        CornerRadius="11"
+                                                        Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Border}}"
+                                                        Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Border}}" />
+                                            </VisualBrush.Visual>
+                                        </VisualBrush>
+                                    </Border.OpacityMask>
+                                    <Grid>
+                                        <!-- Letter-tile fallback (visible when there's no icon image at all) -->
+                                        <Grid Background="{Binding Name, Converter={StaticResource StringToColorBrushConverter}}">
+                                            <TextBlock Text="{Binding Name, Converter={StaticResource FirstLetterConverter}}"
+                                                       Foreground="#33FFFFFF"
+                                                       FontFamily="{DynamicResource DisplayFont}"
+                                                       FontSize="96"
+                                                       FontWeight="Bold"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center" />
+                                        </Grid>
+
+                                        <!-- Blurred, dimmed copy used as the background fill so square logos
+                                             can sit centered without leaving empty bars. -->
+                                        <Image Source="{Binding Converter={StaticResource BoxArtConverter}}"
+                                               Stretch="UniformToFill"
+                                               Opacity="0.55">
+                                            <Image.Effect>
+                                                <BlurEffect Radius="35" KernelType="Gaussian" RenderingBias="Performance" />
+                                            </Image.Effect>
+                                        </Image>
+                                        <!-- Subtle dark wash so blurred bg never overpowers the foreground logo. -->
+                                        <Rectangle Fill="#33000000" />
+
+                                        <!-- Foreground logo: shown 1:1, centered, never cropped. -->
+                                        <Image Source="{Binding Converter={StaticResource BoxArtConverter}}"
+                                               Stretch="Uniform"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Margin="14,14,14,52" />
+
+                                        <!-- Top fade so the title chip is readable -->
+                                        <Border VerticalAlignment="Bottom" Height="84">
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                    <GradientStop Color="#00000000" Offset="0" />
+                                                    <GradientStop Color="#CC000000" Offset="1" />
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                        </Border>
+
+                                        <!-- Title -->
+                                        <TextBlock Text="{Binding Name}"
+                                                   Foreground="#F2F3F5"
+                                                   FontFamily="{DynamicResource DisplayFont}"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   TextWrapping="NoWrap"
+                                                   Margin="12,0,12,12"
+                                                   HorizontalAlignment="Stretch"
+                                                   VerticalAlignment="Bottom"
+                                                   ToolTip="{Binding Name}" />
+
+                                        <!-- Selected check -->
+                                        <Border x:Name="checkBadge"
+                                                Width="32" Height="32"
+                                                CornerRadius="16"
+                                                Background="{DynamicResource AccentBrush}"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Top"
+                                                Margin="0,10,10,0"
+                                                Visibility="{Binding Selected, Converter={StaticResource BoolToVis}}">
+                                            <materialDesign:PackIcon Kind="Check"
+                                                                     Width="20" Height="20"
+                                                                     Foreground="White"
+                                                                     HorizontalAlignment="Center"
+                                                                     VerticalAlignment="Center" />
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="card" Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+                            </Trigger>
+                            <DataTrigger Binding="{Binding Selected}" Value="True">
+                                <Setter TargetName="ring" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                <Setter TargetName="ring" Property="CacheMode">
+                                    <Setter.Value>
+                                        <BitmapCache />
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="ring" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#107C10" BlurRadius="10" ShadowDepth="0" Opacity="0.7" RenderingBias="Performance" />
+                                    </Setter.Value>
+                                </Setter>
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </DataTemplate>
+    </Window.Resources>
+
     <Grid x:Name="grid">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="28*"/>
-            <RowDefinition Height="144*"/>
-            <RowDefinition Height="19*"/>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <materialDesign:ColorZone Padding="16" materialDesign:ShadowAssist.Darken="True" Mode="PrimaryMid" Height="80">
-            <Label x:Name="label1" Content="Welcome to UWPHook, the easier way to add UWP apps and XGP games and apps to Steam!" HorizontalAlignment="Left" Margin="172,-14,0,0" VerticalAlignment="Top" Foreground="#DDFFFFFF"/>
-        </materialDesign:ColorZone>
-        <Image x:Name="image" HorizontalAlignment="Left" Width="178" Height="80" VerticalAlignment="Top" Source="Resources/WhiteTransparent.png" Stretch="UniformToFill" ToolTip="Welcome to UWPHook, add your UWP apps and games to Steam!"/>
-        <Button x:Name="settingsButton" Click="SettingsButton_Click"  Style="{StaticResource MaterialDesignFloatingActionMiniLightButton}"
-                        Margin="0,6,10,0" HorizontalAlignment="Right"
-                        ToolTip="Settings/About" VerticalAlignment="Top">
-            <materialDesign:PackIcon Kind="Settings" Height="24" Width="24" />
-        </Button>
-        <Button Click="LoadButton_Click" Style="{StaticResource MaterialDesignFloatingActionMiniLightButton}"
-                        Margin="0,51,10,0" HorizontalAlignment="Right"
-                        ToolTip="Load installed UWP Apps" VerticalAlignment="Top" Grid.RowSpan="2">
-            <materialDesign:PackIcon Kind="Reload" Height="24" Width="24" />
-        </Button>
-        <Grid Margin="10" Grid.Row="1">
-            <DataGrid x:Name="listGames" Margin="0,25,0,0" CanUserSortColumns="True" CanUserAddRows="False"
-                       materialDesign:DataGridAssist.CellPadding="4 2 2 2" materialDesign:DataGridAssist.ColumnHeaderPadding="4 2 2 2"/>
-            <Label x:Name="label" Content="Press 'Load installed apps' to get a list of installed titles." HorizontalAlignment="Left" Margin="0,-10,0,0" VerticalAlignment="Top"/>
+
+        <!-- Sidebar -->
+        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,1,0">
+            <DockPanel LastChildFill="True">
+                <!-- Brand -->
+                <Grid DockPanel.Dock="Top" Height="80" Margin="20,16,20,8">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="UWPHookNG"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   FontFamily="{DynamicResource DisplayFont}"
+                                   FontSize="22"
+                                   FontWeight="Bold" />
+                        <TextBlock Text="UWP &#x2192; Steam"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   FontFamily="{DynamicResource UiFont}"
+                                   FontSize="11"
+                                   Margin="0,2,0,0" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- Bottom-pinned settings -->
+                <Button x:Name="settingsButton"
+                        DockPanel.Dock="Bottom"
+                        Click="SettingsButton_Click"
+                        Style="{StaticResource GhostButtonStyle}"
+                        Margin="12,8,12,16"
+                        ToolTip="Settings / About">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Cog" Width="18" Height="18" VerticalAlignment="Center" />
+                        <TextBlock Text="Settings" Margin="12,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <!-- Nav rail -->
+                <StackPanel Margin="12,0,12,0">
+                    <Button Style="{StaticResource GhostButtonStyle}"
+                            Background="{DynamicResource SurfaceHoverBrush}"
+                            Foreground="{DynamicResource TextPrimaryBrush}"
+                            Margin="0,4">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="ViewGrid" Width="18" Height="18" VerticalAlignment="Center" />
+                            <TextBlock Text="Library" Margin="12,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Click="LoadButton_Click"
+                            Style="{StaticResource GhostButtonStyle}"
+                            Margin="0,4"
+                            ToolTip="Re-scan installed apps">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Refresh" Width="18" Height="18" VerticalAlignment="Center" />
+                            <TextBlock Text="Refresh" Margin="12,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Main content -->
+        <Grid Grid.Column="1" Grid.Row="0" Margin="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Top bar: title, search, view toggle -->
+            <Grid Grid.Row="0" Margin="24,16,24,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock x:Name="label1"
+                               Text="Library"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               FontFamily="{DynamicResource DisplayFont}"
+                               FontSize="28"
+                               FontWeight="Bold" />
+                    <TextBlock x:Name="label"
+                               Text="Press Refresh to load your installed apps."
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               FontSize="12"
+                               Margin="0,2,0,0" />
+                </StackPanel>
+
+                <!-- Search -->
+                <Border Grid.Column="1"
+                        Background="{DynamicResource SurfaceElevatedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Margin="24,0,16,0"
+                        MaxWidth="420"
+                        HorizontalAlignment="Stretch">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <materialDesign:PackIcon Grid.Column="0"
+                                                 Kind="Magnify"
+                                                 Width="18" Height="18"
+                                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                                 VerticalAlignment="Center"
+                                                 Margin="12,0,0,0" />
+                        <TextBox x:Name="textBox"
+                                 Grid.Column="1"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 CaretBrush="{DynamicResource TextPrimaryBrush}"
+                                 SelectionBrush="{DynamicResource AccentBrush}"
+                                 FontSize="13"
+                                 Padding="10,8"
+                                 VerticalContentAlignment="Center"
+                                 TextChanged="textBox_TextChanged"
+                                 materialDesign:HintAssist.Hint="Search apps..." />
+                    </Grid>
+                </Border>
+
+                <!-- View toggle -->
+                <Border Grid.Column="2"
+                        Background="{DynamicResource SurfaceElevatedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="3"
+                        VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <!-- Games-only filter (pill switch) -->
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="8,0,8,0"
+                                    VerticalAlignment="Center">
+                            <materialDesign:PackIcon Kind="Gamepad"
+                                                     Width="18" Height="18"
+                                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                                     VerticalAlignment="Center" />
+                            <TextBlock Text="Games only"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       FontSize="12"
+                                       Margin="8,0,10,0"
+                                       VerticalAlignment="Center" />
+                            <ToggleButton x:Name="gamesOnlyToggle"
+                                          Click="GamesOnlyToggle_Click"
+                                          ToolTip="Show games only"
+                                          Cursor="Hand"
+                                          Width="40" Height="22"
+                                          VerticalAlignment="Center">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="track"
+                                                Background="{DynamicResource SurfaceHoverBrush}"
+                                                BorderBrush="{DynamicResource BorderStrongBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="11">
+                                            <Grid>
+                                                <Ellipse x:Name="thumb"
+                                                         Width="16" Height="16"
+                                                         Fill="{DynamicResource TextPrimaryBrush}"
+                                                         HorizontalAlignment="Left"
+                                                         VerticalAlignment="Center"
+                                                         Margin="3,0,0,0" />
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="track" Property="Background" Value="{DynamicResource AccentBrush}" />
+                                                <Setter TargetName="track" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                                <Setter TargetName="thumb" Property="Fill" Value="White" />
+                                                <Setter TargetName="thumb" Property="HorizontalAlignment" Value="Right" />
+                                                <Setter TargetName="thumb" Property="Margin" Value="0,0,3,0" />
+                                            </Trigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="track" Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                        </StackPanel>
+                        <Border Width="1"
+                                Margin="2,4"
+                                Background="{DynamicResource BorderBrush}" />
+                        <ToggleButton x:Name="tilesToggle"
+                                      IsChecked="True"
+                                      Click="ViewToggle_Click"
+                                      ToolTip="Tile view"
+                                      Cursor="Hand">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border x:Name="bd"
+                                            CornerRadius="6"
+                                            Padding="10,6"
+                                            Background="Transparent">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource AccentBrush}" />
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                            <materialDesign:PackIcon Kind="ViewGrid" Width="18" Height="18" Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </ToggleButton>
+                        <ToggleButton x:Name="listToggle"
+                                      Click="ViewToggle_Click"
+                                      ToolTip="List view"
+                                      Cursor="Hand">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border x:Name="bd"
+                                            CornerRadius="6"
+                                            Padding="10,6"
+                                            Background="Transparent">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource AccentBrush}" />
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                            <materialDesign:PackIcon Kind="ViewList" Width="18" Height="18" Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </ToggleButton>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Library content area -->
+            <Grid Grid.Row="1" Margin="24,0,24,0">
+                <!-- Tile view -->
+                <ScrollViewer x:Name="tileScroller"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Padding="0,0,0,16">
+                    <ItemsControl x:Name="tileList" ItemTemplate="{StaticResource GameTileTemplate}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- List view (hidden until toggled). Keeps the original DataGrid so existing code-behind keeps working. -->
+                <DataGrid x:Name="listGames"
+                          Visibility="Collapsed"
+                          Background="{DynamicResource BgBrush}"
+                          Foreground="{DynamicResource TextPrimaryBrush}"
+                          BorderBrush="{DynamicResource BorderBrush}"
+                          RowBackground="{DynamicResource SurfaceBrush}"
+                          AlternatingRowBackground="{DynamicResource SurfaceElevatedBrush}"
+                          GridLinesVisibility="None"
+                          HeadersVisibility="Column"
+                          CanUserSortColumns="True"
+                          CanUserAddRows="False"
+                          materialDesign:DataGridAssist.CellPadding="12 8 8 8"
+                          materialDesign:DataGridAssist.ColumnHeaderPadding="12 10 8 10" />
+
+                <!-- Empty / loading state -->
+                <Border x:Name="emptyState"
+                        Style="{StaticResource CardStyle}"
+                        Background="{DynamicResource SurfaceBrush}"
+                        Padding="40"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="Collapsed">
+                    <StackPanel HorizontalAlignment="Center">
+                        <materialDesign:PackIcon Kind="GamepadVariantOutline"
+                                                 Width="56" Height="56"
+                                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                                 HorizontalAlignment="Center" />
+                        <TextBlock Text="No apps loaded yet"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   FontFamily="{DynamicResource DisplayFont}"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,12,0,4" />
+                        <TextBlock Text="Click Refresh in the sidebar to scan your installed apps."
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   FontSize="12"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Indeterminate progress -->
+                <ProgressBar x:Name="progressBar"
+                             VerticalAlignment="Top"
+                             Height="3"
+                             Background="Transparent"
+                             Foreground="{DynamicResource AccentBrush}"
+                             BorderThickness="0"
+                             IsIndeterminate="True"
+                             Visibility="Collapsed" />
+            </Grid>
         </Grid>
-        <Button Content="Export selected apps to Steam" Click="ExportButton_Click" HorizontalAlignment="Right" Margin="0,0,10,10" Grid.Row="2" VerticalAlignment="Bottom" Width="227"/>
-        <ProgressBar Visibility="Collapsed" x:Name="progressBar" Margin="10,215,10,174" Grid.Row="1" IsIndeterminate="True" />
-        <Label Content="Filter:" HorizontalAlignment="Left" Margin="5,16,0,0" Grid.Row="2" VerticalAlignment="Top"/>
-        <TextBox x:Name="textBox" HorizontalAlignment="Left" Height="25" Margin="50,17,0,0" Grid.Row="2" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="271" TextChanged="textBox_TextChanged"/>
+
+        <!-- Bottom action bar -->
+        <Border Grid.Column="1" Grid.Row="1"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="24,14">
+            <Grid>
+                <TextBlock x:Name="selectionCountLabel"
+                           Text=""
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+                <Button Content="Add to Steam"
+                        Click="ExportButton_Click"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        HorizontalAlignment="Right" />
+            </Grid>
+        </Border>
+
+        <!-- Hidden alias kept for code-behind (was named 'image' in the previous design).
+             We don't render it but the field must exist so InitializeComponent doesn't break
+             callers that touch it. -->
+        <Image x:Name="image" Visibility="Collapsed" />
     </Grid>
 </Window>

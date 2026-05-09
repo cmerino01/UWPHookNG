@@ -6,10 +6,17 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <materialDesign:CustomColorTheme BaseTheme="Light" PrimaryColor="Blue" SecondaryColor="MediumPurple" />
-                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Light.xaml"/>
+                <!-- Material Design surfaces (BaseTheme set at runtime in App.OnStartup). -->
+                <materialDesign:CustomColorTheme BaseTheme="Dark" PrimaryColor="Green" SecondaryColor="LightGreen" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Dark.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign3.Defaults.xaml"/>
-                <ResourceDictionary Source="pack://application:,,,/MaterialDesignColors;component/Themes/Recommended/Primary/MaterialDesignColor.Blue.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignColors;component/Themes/Recommended/Primary/MaterialDesignColor.Green.xaml"/>
+
+                <!-- Active palette colors (swapped at runtime by ThemeManager). -->
+                <ResourceDictionary Source="pack://application:,,,/UWPHook;component/Themes/Palette.Dark.xaml"/>
+                <!-- Brushes & geometry that consume the active palette. -->
+                <ResourceDictionary Source="pack://application:,,,/UWPHook;component/Themes/Tokens.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/UWPHook;component/Themes/Controls.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

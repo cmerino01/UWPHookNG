@@ -131,7 +131,7 @@ public partial class GamesWindow : Window
         catch (Exception e)
         {
             this.Show();
-            MessageBox.Show(e.Message, "UWPHook", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(e.Message, "UWPHookNG", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally
         {
@@ -197,7 +197,7 @@ public partial class GamesWindow : Window
         grid.IsEnabled = true;
         progressBar.Visibility = Visibility.Collapsed;
 
-        MessageBox.Show(msg, "UWPHook", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(msg, "UWPHookNG", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private static readonly HttpClient s_imageHttpClient = new HttpClient();
@@ -717,9 +717,10 @@ public partial class GamesWindow : Window
         bwrLoad.RunWorkerCompleted += Bwr_RunWorkerCompleted;
 
         grid.IsEnabled = false;
-        label.Content = "Loading your installed apps";
+        label.Text = "Loading your installed apps";
 
         progressBar.Visibility = Visibility.Visible;
+        emptyState.Visibility = Visibility.Collapsed;
         Apps.Entries = new System.Collections.ObjectModel.ObservableCollection<AppEntry>();
 
         bwrLoad.RunWorkerAsync();
@@ -732,14 +733,90 @@ public partial class GamesWindow : Window
     /// <param name="e"></param>
     private void Bwr_RunWorkerCompleted(object? sender, RunWorkerCompletedEventArgs e)
     {
-        listGames.ItemsSource = Apps.Entries;
+        // Wire both list and tile views to the same CollectionView so the
+        // search box and the "Games only" toggle filter both at once.
+        var view = System.Windows.Data.CollectionViewSource.GetDefaultView(Apps.Entries);
+        view.Filter = MatchesActiveFilters;
 
-        listGames.Columns[2].IsReadOnly = true;
-        listGames.Columns[3].IsReadOnly = true;
+        listGames.ItemsSource = Apps.Entries;
+        tileList.ItemsSource = Apps.Entries;
+
+        if (listGames.Columns.Count > 3)
+        {
+            listGames.Columns[2].IsReadOnly = true;
+            listGames.Columns[3].IsReadOnly = true;
+        }
+
+        // Restore persisted toggle state. Wire it up before refreshing filters so the
+        // initial UpdateLibraryStatus call sees the correct visibility.
+        gamesOnlyToggle.IsChecked = Settings.Default.GamesOnly;
 
         grid.IsEnabled = true;
         progressBar.Visibility = Visibility.Collapsed;
-        label.Content = "Installed Apps";
+        UpdateLibraryStatus();
+        UpdateSelectionCount();
+    }
+
+    /// <summary>
+    /// Updates the "N installed apps" label and the empty-state placeholder based on what's
+    /// actually visible after filtering. Called after load completes and on every filter change.
+    /// </summary>
+    private void UpdateLibraryStatus()
+    {
+        var total = Apps?.Entries?.Count ?? 0;
+        var visible = total;
+        if (Apps?.Entries is not null)
+        {
+            var view = System.Windows.Data.CollectionViewSource.GetDefaultView(Apps.Entries);
+            if (view is not null)
+            {
+                visible = view.Cast<object>().Count();
+            }
+        }
+
+        if (total == 0)
+        {
+            label.Text = "Press Refresh to load your installed apps.";
+        }
+        else if (visible == total)
+        {
+            label.Text = total == 1 ? "1 installed app" : $"{total} installed apps";
+        }
+        else
+        {
+            label.Text = $"{visible} of {total} apps shown";
+        }
+
+        emptyState.Visibility = (total == 0) ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void TileButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.Tag is AppEntry app)
+        {
+            app.Selected = !app.Selected;
+            UpdateSelectionCount();
+        }
+    }
+
+    private void ViewToggle_Click(object sender, RoutedEventArgs e)
+    {
+        // The two ToggleButtons act as a radio pair; whichever was clicked stays checked.
+        if (sender is System.Windows.Controls.Primitives.ToggleButton clicked)
+        {
+            tilesToggle.IsChecked = clicked == tilesToggle;
+            listToggle.IsChecked = clicked == listToggle;
+        }
+
+        bool tilesOn = tilesToggle.IsChecked == true;
+        tileScroller.Visibility = tilesOn ? Visibility.Visible : Visibility.Collapsed;
+        listGames.Visibility = tilesOn ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void UpdateSelectionCount()
+    {
+        int n = Apps?.Entries?.Count(a => a.Selected) ?? 0;
+        selectionCountLabel.Text = n == 0 ? string.Empty : (n == 1 ? "1 selected" : $"{n} selected");
     }
 
     /// <summary>
@@ -781,9 +858,12 @@ public partial class GamesWindow : Window
                 {
                     //We get the default square tile to find where the app stores it's icons, then we resolve which one is the widest
                     string? logosPath = Path.GetDirectoryName(values[1]);
+                    // 5th field (Kind) is optional for backward compatibility with older formats.
+                    var isGame = values.Length >= 5 &&
+                                 string.Equals(values[4], "game", StringComparison.OrdinalIgnoreCase);
                     Application.Current.Dispatcher.BeginInvoke((Action)delegate ()
                     {
-                        Apps.Entries.Add(new AppEntry() { Name = values[0], Executable = values[3], IconPath = logosPath, Aumid = values[2], Selected = false });
+                        Apps.Entries.Add(new AppEntry() { Name = values[0], Executable = values[3], IconPath = logosPath, Aumid = values[2], Selected = false, IsGame = isGame });
                     });
                 }
             }
@@ -791,31 +871,60 @@ public partial class GamesWindow : Window
         catch (Exception ex)
         {
             Log.Error(ex.Message);
-            MessageBox.Show(ex.Message, "UWPHook", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, "UWPHookNG", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
     private void textBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
     {
-        if (Apps.Entries != null)
+        RefreshFilters();
+    }
+
+    private void GamesOnlyToggle_Click(object sender, RoutedEventArgs e)
+    {
+        Settings.Default.GamesOnly = gamesOnlyToggle.IsChecked == true;
+        Settings.Default.Save();
+        RefreshFilters();
+    }
+
+    private void RefreshFilters()
+    {
+        if (Apps?.Entries is null) return;
+        var view = System.Windows.Data.CollectionViewSource.GetDefaultView(Apps.Entries);
+        view?.Refresh();
+        UpdateLibraryStatus();
+    }
+
+    /// <summary>
+    /// Combined filter predicate used by the shared CollectionView. An entry is shown if it
+    /// matches the search box (or the search box is empty) AND it's a game when the
+    /// "Games only" toggle is on.
+    /// </summary>
+    private bool MatchesActiveFilters(object item)
+    {
+        if (item is not AppEntry app) return false;
+
+        if (Settings.Default.GamesOnly && !app.IsGame)
         {
-            if (!String.IsNullOrEmpty(textBox.Text) && Apps.Entries.Count > 0)
-            {
-                listGames.Items.Filter = new Predicate<object>(Contains);
-            }
-            else
-            {
-                listGames.Items.Filter = null;
-            }
+            return false;
         }
+
+        var query = textBox?.Text;
+        if (string.IsNullOrEmpty(query))
+        {
+            return true;
+        }
+
+        var needle = query.ToLowerInvariant();
+        return (app.Aumid?.ToLowerInvariant().Contains(needle) ?? false)
+            || (app.Name?.ToLowerInvariant().Contains(needle) ?? false);
     }
 
     public bool Contains(object o)
     {
-        AppEntry? appEntry = o as AppEntry;
-        if (appEntry is null) return false;
-        return (appEntry.Aumid?.ToLower().Contains(textBox.Text.ToLower()) ?? false)
-            || (appEntry.Name?.ToLower().Contains(textBox.Text.ToLower()) ?? false);
+        // Retained for backward compatibility with any external caller. Routes through the
+        // unified filter so both views stay consistent.
+        return MatchesActiveFilters(o);
     }
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
@@ -839,7 +948,7 @@ public partial class GamesWindow : Window
             Settings.Default.OfferedSteamGridDB = true;
             Settings.Default.Save();
 
-            var boxResult = MessageBox.Show("Do you want to automatically import grid images for imported games?", "UWPHook", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            var boxResult = MessageBox.Show("Do you want to automatically import grid images for imported games?", "UWPHookNG", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (boxResult == MessageBoxResult.Yes)
             {
                 SettingsButton_Click(this, new RoutedEventArgs());

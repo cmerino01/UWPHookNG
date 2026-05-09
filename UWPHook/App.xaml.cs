@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Threading;
+using Microsoft.Win32;
 using Serilog;
+using UWPHook.Properties;
 
 namespace UWPHook;
 
@@ -30,11 +33,27 @@ public partial class App : Application
             args.SetObserved();
         };
 
+        // Apply the persisted theme before any window is shown so the first paint matches.
+        var selection = ThemeManager.ParseSelection(Settings.Default.Theme);
+        ThemeManager.Apply(selection);
+
+        // Refresh on OS theme changes (only matters in Auto mode; cheap to always wire).
+        SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
+
         base.OnStartup(e);
+    }
+
+    private static void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
+    {
+        if (e.Category == UserPreferenceCategory.General)
+        {
+            Application.Current?.Dispatcher.BeginInvoke((Action)ThemeManager.ReevaluateFromSystem);
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
         Log.Information("UWPHook exiting (code {ExitCode})", e.ApplicationExitCode);
         Log.CloseAndFlush();
         base.OnExit(e);
