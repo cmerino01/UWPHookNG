@@ -21,7 +21,7 @@ static class AppManager
 {
     private static int runningProcessId;
     private static bool isLauncherProcess;
-    private static string executablePath;
+    private static string? executablePath;
 
     /// <summary>
     /// Launch a UWP App using a ApplicationActivationManager and sets a internal id to launched proccess id
@@ -92,12 +92,13 @@ static class AppManager
                 {
                     // Handle process running by some launcher by checking their executable path and name
                     var processes = GetProcess();
+                    string currentExePath = executablePath ?? string.Empty;
                     foreach (var process in processes)
                     {
-                        string executableFile = executablePath.Contains('\\') ? executablePath.Substring(executablePath.LastIndexOf('\\') + 1) : executablePath;
-                        Log.Verbose("Process " + process.Value.Path + " contains " + executablePath + " ? : " + process.Value.Path.Contains(executablePath).ToString());
+                        string executableFile = currentExePath.Contains('\\') ? currentExePath.Substring(currentExePath.LastIndexOf('\\') + 1) : currentExePath;
+                        Log.Verbose("Process " + process.Value.Path + " contains " + currentExePath + " ? : " + process.Value.Path.Contains(currentExePath).ToString());
                         Log.Verbose("Process " + process.Key + " contains " + executableFile + " ? : " + process.Key.Contains(executableFile).ToString());
-                        if (process.Value.Path.Contains(executablePath) || process.Key.Contains(executableFile))
+                        if (process.Value.Path.Contains(currentExePath) || process.Key.Contains(executableFile))
                         {
                             int pid = process.Value.Pid;
                             Log.Verbose($"Launcher opened child process ({runningProcessId}->{pid}), using new process as target");
@@ -136,13 +137,13 @@ static class AppManager
         {
             foreach (var process in searcher.Get())
             {
-                string processName = Convert.ToString(process.Properties["Name"].Value);
+                string? processName = Convert.ToString(process.Properties["Name"].Value);
                 int processId = Convert.ToInt32(process.Properties["processid"].Value);
-                string processPath = Convert.ToString(process.Properties["ExecutablePath"].Value);
+                string? processPath = Convert.ToString(process.Properties["ExecutablePath"].Value);
 
-                if (String.IsNullOrWhiteSpace(processName) || result.ContainsKey(processName)) continue;
+                if (string.IsNullOrWhiteSpace(processName) || result.ContainsKey(processName)) continue;
 
-                result.Add(processName, (processPath, processId));
+                result.Add(processName, (processPath ?? string.Empty, processId));
             }
         }
 
@@ -153,22 +154,19 @@ static class AppManager
     /// Gets a list of installed UWP Apps on the system, containing each app name + AUMID + executable path, separated by '|' 
     /// </summary>
     /// <returns>List of installed UWP Apps</returns>
-    public static List<String> GetInstalledApps()
+    public static List<string> GetInstalledApps()
     {
-        List<String> result = null;
+        List<string>? result = null;
         var assembly = Assembly.GetExecutingAssembly();
         //Load the powershell script to get installed apps
         var resourceName = "UWPHook.Resources.GetAUMIDScript.ps1";
         try
         {
-            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-            {
-                using (StreamReader reader = new StreamReader(stream))
-                {
-                    //Every entry is listed separated by ;
-                    result = ScriptManager.RunScript(reader.ReadToEnd()).Split(';').ToList<string>();
-                }
-            }
+            using var stream = assembly.GetManifestResourceStream(resourceName)
+                ?? throw new InvalidOperationException($"Embedded resource '{resourceName}' not found.");
+            using var reader = new StreamReader(stream);
+            //Every entry is listed separated by ;
+            result = ScriptManager.RunScript(reader.ReadToEnd()).Split(';').ToList();
         }
         catch (Exception e)
         {
@@ -185,17 +183,20 @@ static class AppManager
     /// <param name="appName">Application user model ID (aumid)</param>
     /// <param name="readableName">User-friendly app name</param>
     /// <returns>Whether this is a known app</returns>
-    public static bool IsKnownApp(string appName, out string readableName)
+    public static bool IsKnownApp(string appName, out string? readableName)
     {
         string appsJson = GetEmbeddedResource("KnownApps.json");
         var apps = JsonSerializer.Deserialize<Dictionary<string, string>>(appsJson);
 
-        foreach (var kvp in apps)
+        if (apps is not null)
         {
-            if (appName.StartsWith(kvp.Key + "_"))
+            foreach (var kvp in apps)
             {
-                readableName = kvp.Value;
-                return true;
+                if (appName.StartsWith(kvp.Key + "_"))
+                {
+                    readableName = kvp.Value;
+                    return true;
+                }
             }
         }
 
@@ -207,11 +208,10 @@ static class AppManager
     {
         var assembly = Assembly.GetExecutingAssembly();
         resourceName = assembly.GetManifestResourceNames().First(r => r.Contains(resourceName));
-        using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-        using (StreamReader reader = new StreamReader(stream))
-        {
-            return reader.ReadToEnd();
-        }
+        using var stream = assembly.GetManifestResourceStream(resourceName)
+            ?? throw new InvalidOperationException($"Embedded resource '{resourceName}' not found.");
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
     }
 
     [DllImport("user32.dll")]

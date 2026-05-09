@@ -27,33 +27,38 @@ public class AppEntry : INotifyPropertyChanged
     /// <summary>
     /// Gets or sets the name of the application
     /// </summary>
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
     /// <summary>
     /// Gets or sets the executable of the application
     /// </summary>
-    public string Executable { get; set; }
+    public string? Executable { get; set; }
 
     /// <summary>
     /// Gets or sets the aumid of the application
     /// </summary>
-    public string Aumid { get; set; }
+    public string? Aumid { get; set; }
 
     /// <summary>
     /// Gets or sets the icon for the app
     /// </summary>
-    public string Icon { get; set; }
+    public string? Icon { get; set; }
 
     /// <summary>
     /// Sets the path where icons for the app is
     /// </summary>
-    public string IconPath { get; set; }
+    public string? IconPath { get; set; }
 
     public string widestSquareIcon()
     {
         var result = string.Empty;
         var size = new Size(0, 0);
         var images = new List<string>();
+
+        if (string.IsNullOrEmpty(IconPath))
+        {
+            return string.Empty;
+        }
 
         try
         {
@@ -70,7 +75,7 @@ public class AppEntry : INotifyPropertyChanged
 
         foreach (var image in images)
         {
-            Image icon = null;
+            Image? icon = null;
 
             // Try to load the image; if it's invalid, skip it.
             try
@@ -98,17 +103,17 @@ public class AppEntry : INotifyPropertyChanged
 
     public string isKnownApp()
     {
-        if (AppManager.IsKnownApp(Aumid, out string name))
+        if (Aumid is not null && AppManager.IsKnownApp(Aumid, out string? name))
         {
-            return name;
+            return name!;
         }
 
         return "Name not found, double click here to edit";
     }
 
-    public event PropertyChangedEventHandler PropertyChanged;
+    public event PropertyChangedEventHandler? PropertyChanged;
 
-    protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }

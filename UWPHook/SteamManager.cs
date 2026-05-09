@@ -10,7 +10,7 @@ public static class SteamManager
     /// <summary>
     /// Returns Steam's current installed path.
     /// </summary>
-    public static string GetSteamFolder()
+    public static string? GetSteamFolder()
     {
         const string registryPath = @"SOFTWARE\Valve\Steam";
 

@@ -28,7 +28,7 @@ namespace UWPHook;
 public partial class GamesWindow : Window
 {
     AppEntryModel Apps;
-    BackgroundWorker bwrLoad;
+    BackgroundWorker? bwrLoad;
     static LoggingLevelSwitch levelSwitch = new LoggingLevelSwitch();
 
     public GamesWindow()
@@ -62,7 +62,7 @@ public partial class GamesWindow : Window
         else
         {
             //auto refresh on load
-            LoadButton_Click(null, null);
+            LoadButton_Click(this, new RoutedEventArgs());
         }
     }
 
@@ -83,7 +83,7 @@ public partial class GamesWindow : Window
     /// <returns></returns>
     private async Task LauncherAsync(string[] args)
     {
-        FullScreenLauncher launcher = null;
+        FullScreenLauncher? launcher = null;
         //So, for some reason, Steam is now stopping in-home streaming if the launched app is minimized, so not hiding UWPHook's window is doing the trick for now
         if (Settings.Default.StreamMode)
         {
@@ -227,7 +227,7 @@ public partial class GamesWindow : Window
     /// <returns></returns>
     private async Task SaveImage(string imageUrl, string destinationFilename, ImageFormat format)
     {
-        Stream stream = null;
+        Stream? stream = null;
         try
         {
             stream = await s_imageHttpClient.GetStreamAsync(imageUrl);
@@ -302,7 +302,7 @@ public partial class GamesWindow : Window
     {
         SteamGridDbApi api = new SteamGridDbApi(Properties.Settings.Default.SteamGridDbApiKey);
         string tmpGridDirectory = Path.GetTempPath() + "UWPHook\\tmp_grid\\";
-        GameResponse[] games = null;
+        GameResponse[]? games = null;
 
         try
         {
@@ -345,25 +345,29 @@ public partial class GamesWindow : Window
             if (gridsHorizontal != null && gridsHorizontal.Length > 0)
             {
                 var grid = gridsHorizontal[0];
-                saveImagesTasks.Add(SaveImage(grid.Url, $"{tmpGridDirectory}\\{gameId}.png", ImageFormat.Png));
+                if (grid.Url is not null)
+                    saveImagesTasks.Add(SaveImage(grid.Url, $"{tmpGridDirectory}\\{gameId}.png", ImageFormat.Png));
             }
 
             if (gridsVertical != null && gridsVertical.Length > 0)
             {
                 var grid = gridsVertical[0];
-                saveImagesTasks.Add(SaveImage(grid.Url, $"{tmpGridDirectory}\\{gameId}p.png", ImageFormat.Png));
+                if (grid.Url is not null)
+                    saveImagesTasks.Add(SaveImage(grid.Url, $"{tmpGridDirectory}\\{gameId}p.png", ImageFormat.Png));
             }
 
             if (heroes != null && heroes.Length > 0)
             {
                 var hero = heroes[0];
-                saveImagesTasks.Add(SaveImage(hero.Url, $"{tmpGridDirectory}\\{gameId}_hero.png", ImageFormat.Png));
+                if (hero.Url is not null)
+                    saveImagesTasks.Add(SaveImage(hero.Url, $"{tmpGridDirectory}\\{gameId}_hero.png", ImageFormat.Png));
             }
 
             if (logos != null && logos.Length > 0)
             {
                 var logo = logos[0];
-                saveImagesTasks.Add(SaveImage(logo.Url, $"{tmpGridDirectory}\\{gameId}_logo.png", ImageFormat.Png));
+                if (logo.Url is not null)
+                    saveImagesTasks.Add(SaveImage(logo.Url, $"{tmpGridDirectory}\\{gameId}_logo.png", ImageFormat.Png));
             }
 
             await Task.WhenAll(saveImagesTasks);
@@ -382,7 +386,7 @@ public partial class GamesWindow : Window
             catch (Exception exception)
             {
                 Log.Error(exception.Message);
-                Log.Error(exception.StackTrace);
+                Log.Error(exception.StackTrace ?? string.Empty);
                 throw new Exception("UWPHook was not able to create the tmp directory for some reason." + Environment.NewLine +
                     "You may solve this by manually creating the following folder:" + Environment.NewLine +
                     tmpGridDirectory);
@@ -398,14 +402,14 @@ public partial class GamesWindow : Window
     private async Task<bool> ExportGames()
     {
         string[] tags = Settings.Default.Tags.Split(',');
-        string steam_folder = SteamManager.GetSteamFolder();
+        string? steam_folder = SteamManager.GetSteamFolder();
 
-        if (Directory.Exists(steam_folder))
+        if (steam_folder is not null && Directory.Exists(steam_folder))
         {
             var users = SteamManager.GetUsers(steam_folder);
             var selected_apps = Apps.Entries.Where(app => app.Selected);
             var processModule = Process.GetCurrentProcess().MainModule;
-            var exePath = processModule?.FileName;
+            var exePath = processModule?.FileName ?? string.Empty;
             var exeDir = Path.GetDirectoryName(exePath);
 
             List<Task> gridImagesDownloadTasks = new List<Task>();
@@ -417,7 +421,7 @@ public partial class GamesWindow : Window
             {
                 app.Icon = app.widestSquareIcon();
 
-                if (downloadGridImages)
+                if (downloadGridImages && !string.IsNullOrEmpty(app.Name))
                 {
                     Log.Verbose("Downloading grid images for app " + app.Name);
 
@@ -469,14 +473,14 @@ public partial class GamesWindow : Window
 
                                     string[] images = Directory.GetFiles(tmpGridDirectory);
 
-                                    UInt64 gameId = GenerateSteamGridAppId(app.Name, exePath);
+                                    UInt64 gameId = GenerateSteamGridAppId(app.Name ?? string.Empty, exePath);
                                     app.Icon = PersistAppIcon(app, tmpGridDirectory + gameId + "_logo.png");
                                 });
                             }
 
                             VDFEntry newApp = new VDFEntry()
                             {
-                                appid = ((int)GenerateSteamGridAppId(app.Name, exePath)),
+                                appid = ((int)GenerateSteamGridAppId(app.Name ?? string.Empty, exePath)),
                                 AppName = app.Name,
                                 Exe = exePath,
                                 StartDir = exeDir,
@@ -597,14 +601,14 @@ public partial class GamesWindow : Window
         string icons_path = path + @"\Briano\UWPHook\icons\";
 
         // If we do not have an specific icon to copy, copy app.icon, if we do, copy the specified icon
-        string icon_to_copy = String.IsNullOrEmpty(forcedIcon) ? app.Icon : forcedIcon;
+        string icon_to_copy = string.IsNullOrEmpty(forcedIcon) ? (app.Icon ?? string.Empty) : forcedIcon;
 
         if (!Directory.Exists(icons_path))
         {
             Directory.CreateDirectory(icons_path);
         }
 
-        string dest_file = String.Join(String.Empty, icons_path, app.Aumid + Path.GetFileName(icon_to_copy));
+        string dest_file = string.Join(string.Empty, icons_path, app.Aumid + Path.GetFileName(icon_to_copy));
         try
         {
             if (File.Exists(icon_to_copy))
@@ -613,7 +617,7 @@ public partial class GamesWindow : Window
             }
             else
             {
-                dest_file = app.Icon;
+                dest_file = app.Icon ?? string.Empty;
             }
         }
         catch (System.IO.IOException e)
@@ -632,12 +636,17 @@ public partial class GamesWindow : Window
     /// <returns></returns>
     private async Task<bool> RestartSteam(bool restartSteam)
     {
-        Func<Process> getSteam = () => Process.GetProcessesByName("steam").SingleOrDefault();
-        Process steam = getSteam();
+        Func<Process?> getSteam = () => Process.GetProcessesByName("steam").SingleOrDefault();
+        Process? steam = getSteam();
 
         if (steam != null)
         {
-            string steamExe = steam.MainModule.FileName;
+            string? steamExe = steam.MainModule?.FileName;
+            if (string.IsNullOrEmpty(steamExe))
+            {
+                Log.Debug("Could not resolve Steam executable path");
+                return false;
+            }
 
             //we always ask politely
             Log.Debug("Requesting Steam shutdown");
@@ -680,9 +689,9 @@ public partial class GamesWindow : Window
     {
         Log.Debug("Clearing all elements in shortcuts.vdf");
         string[] tags = Settings.Default.Tags.Split(',');
-        string steam_folder = SteamManager.GetSteamFolder();
+        string? steam_folder = SteamManager.GetSteamFolder();
 
-        if (Directory.Exists(steam_folder))
+        if (steam_folder is not null && Directory.Exists(steam_folder))
         {
             var users = SteamManager.GetUsers(steam_folder);
             var exePath = @"""" + System.Reflection.Assembly.GetExecutingAssembly().Location + @"""";
@@ -744,7 +753,7 @@ public partial class GamesWindow : Window
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
-    private void Bwr_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+    private void Bwr_RunWorkerCompleted(object? sender, RunWorkerCompletedEventArgs e)
     {
         listGames.ItemsSource = Apps.Entries;
 
@@ -761,7 +770,7 @@ public partial class GamesWindow : Window
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
-    private void Bwr_DoWork(object sender, DoWorkEventArgs e)
+    private void Bwr_DoWork(object? sender, DoWorkEventArgs e)
     {
         try
         {
@@ -769,19 +778,19 @@ public partial class GamesWindow : Window
             ScriptManager.RunScript("Set-ExecutionPolicy RemoteSigned -Scope Process -Force");
 
             //Get all installed apps on the system excluding frameworks
-            List<String> installedApps = AppManager.GetInstalledApps();
+            List<string> installedApps = AppManager.GetInstalledApps();
 
             //Alfabetic sort
             installedApps.Sort();
 
             //Split every app that we couldn't resolve the app name
-            var nameNotFound = (from s in installedApps where s.Contains("double click") select s).ToList<String>();
+            var nameNotFound = (from s in installedApps where s.Contains("double click") select s).ToList<string>();
 
             //Remove them from the original list
             installedApps.RemoveAll(item => item.Contains("double click"));
 
             //Rejoin them in the original list, but putting them into last
-            installedApps = installedApps.Union(nameNotFound).ToList<String>();
+            installedApps = installedApps.Union(nameNotFound).ToList<string>();
 
             foreach (var app in installedApps)
             {
@@ -789,15 +798,15 @@ public partial class GamesWindow : Window
                 //I hope no apps have that in their name. Ever.
                 var values = app.Replace("\r\n", "").Split('|');
 
-                if (values.Length >= 3 && AppManager.IsKnownApp(values[2], out string readableName))
+                if (values.Length >= 3 && AppManager.IsKnownApp(values[2], out string? readableName))
                 {
-                    values[0] = readableName;
+                    values[0] = readableName ?? values[0];
                 }
 
-                if (!String.IsNullOrWhiteSpace(values[0]))
+                if (!string.IsNullOrWhiteSpace(values[0]))
                 {
                     //We get the default square tile to find where the app stores it's icons, then we resolve which one is the widest
-                    string logosPath = Path.GetDirectoryName(values[1]);
+                    string? logosPath = Path.GetDirectoryName(values[1]);
                     Application.Current.Dispatcher.BeginInvoke((Action)delegate ()
                     {
                         Apps.Entries.Add(new AppEntry() { Name = values[0], Executable = values[3], IconPath = logosPath, Aumid = values[2], Selected = false });
@@ -829,8 +838,10 @@ public partial class GamesWindow : Window
 
     public bool Contains(object o)
     {
-        AppEntry appEntry = o as AppEntry;
-        return (appEntry.Aumid.ToLower().Contains(textBox.Text.ToLower()) || appEntry.Name.ToLower().Contains(textBox.Text.ToLower()));
+        AppEntry? appEntry = o as AppEntry;
+        if (appEntry is null) return false;
+        return (appEntry.Aumid?.ToLower().Contains(textBox.Text.ToLower()) ?? false)
+            || (appEntry.Name?.ToLower().Contains(textBox.Text.ToLower()) ?? false);
     }
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
@@ -857,7 +868,7 @@ public partial class GamesWindow : Window
             var boxResult = MessageBox.Show("Do you want to automatically import grid images for imported games?", "UWPHook", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (boxResult == MessageBoxResult.Yes)
             {
-                SettingsButton_Click(this, null);
+                SettingsButton_Click(this, new RoutedEventArgs());
             }
         }
     }

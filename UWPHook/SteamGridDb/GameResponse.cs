@@ -10,5 +10,5 @@ internal sealed class GameResponse
     /// <summary>
     /// Name of the game in SteamGridDB.
     /// </summary>
-    public string Name { get; set; }
+    public string? Name { get; set; }
 }

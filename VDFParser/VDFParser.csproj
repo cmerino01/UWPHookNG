@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -8,6 +8,8 @@
     <LangVersion>latest</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- Submodule sources are upstream code; suppress non-actionable analyzer noise. -->
+    <NoWarn>$(NoWarn);CA2022</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

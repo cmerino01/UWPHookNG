@@ -17,7 +17,7 @@ public partial class SettingsWindow : Window
     {
         InitializeComponent();
 
-        Title = "UWPHook version " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        Title = "UWPHook version " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString();
 
         cultures_comboBox.ItemsSource = CultureInfo.GetCultures(CultureTypes.AllCultures).Select(c => c.TextInfo.CultureName);
         cultures_comboBox.SelectedItem = string.IsNullOrEmpty(Settings.Default.TargetLanguage) ? CultureInfo.CurrentCulture.TextInfo.CultureName : Properties.Settings.Default.TargetLanguage;
@@ -76,12 +76,13 @@ public partial class SettingsWindow : Window
 
     private void saveButton_Click(object sender, RoutedEventArgs e)
     {
-        Properties.Settings.Default.ChangeLanguage = (bool)language_toggle.IsChecked;
-        Properties.Settings.Default.TargetLanguage = cultures_comboBox.SelectedItem.ToString();
-        Properties.Settings.Default.Seconds = Int32.Parse(seconds_comboBox.SelectedItem.ToString().Substring(0, 1));
-        Properties.Settings.Default.StreamMode = (bool)streaming_toggle.IsChecked;
-        Properties.Settings.Default.ChangeResolution = (bool)change_resolution_toggle.IsChecked;
-        Properties.Settings.Default.TargetResolution = resolution_comboBox.SelectedItem.ToString();
+        Properties.Settings.Default.ChangeLanguage = language_toggle.IsChecked == true;
+        Properties.Settings.Default.TargetLanguage = cultures_comboBox.SelectedItem?.ToString() ?? string.Empty;
+        var secondsText = seconds_comboBox.SelectedItem?.ToString();
+        Properties.Settings.Default.Seconds = !string.IsNullOrEmpty(secondsText) ? int.Parse(secondsText.Substring(0, 1)) : 0;
+        Properties.Settings.Default.StreamMode = streaming_toggle.IsChecked == true;
+        Properties.Settings.Default.ChangeResolution = change_resolution_toggle.IsChecked == true;
+        Properties.Settings.Default.TargetResolution = resolution_comboBox.SelectedItem?.ToString() ?? string.Empty;
         Properties.Settings.Default.SelectedLogLevel = logLevel_comboBox.SelectedIndex.ToString();
         Properties.Settings.Default.SteamGridDbApiKey = steamgriddb_api_key.Text.Trim('\r', '\n');
         Properties.Settings.Default.SelectedSteamGridDB_Style = style_comboBox.SelectedIndex;

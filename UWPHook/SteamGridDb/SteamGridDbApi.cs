@@ -40,11 +40,11 @@ internal sealed class SteamGridDbApi
     /// </summary>
     /// <param name="gameName">Name of the game</param>
     /// <returns>Array of games corresponding to the provided name</returns>
-    public async Task<GameResponse[]> SearchGame(string gameName)
+    public async Task<GameResponse[]?> SearchGame(string gameName)
     {
         var path = $"search/autocomplete/{gameName}";
 
-        GameResponse[] games = null;
+        GameResponse[]? games = null;
         var response = await _httpClient.GetAsync(path);
 
         if (response.IsSuccessStatusCode)
@@ -71,7 +71,7 @@ internal sealed class SteamGridDbApi
     /// </summary>
     /// <param name="dimensions">Comma separated list of resolutions, see https://www.steamgriddb.com/api/v2#tag/GRIDS</param>
     /// <returns>The formatted query parameters</returns>
-    public string BuildParameters(string dimensions)
+    public string BuildParameters(string? dimensions)
     {
         var result = string.Empty;
         var style = _settings.SteamGridDB_Style[_settings.SelectedSteamGridDB_Style];
@@ -100,10 +100,10 @@ internal sealed class SteamGridDbApi
     /// <summary>
     /// Performs a request to a given url and returns the parsed image array.
     /// </summary>
-    public async Task<ImageResponse[]> GetResponse(string url)
+    public async Task<ImageResponse[]?> GetResponse(string url)
     {
         var response = await _httpClient.GetAsync(url);
-        ImageResponse[] images = null;
+        ImageResponse[]? images = null;
 
         if (response.IsSuccessStatusCode)
         {
@@ -117,18 +117,18 @@ internal sealed class SteamGridDbApi
         return images;
     }
 
-    public Task<ImageResponse[]> GetGameGrids(int gameId, string dimensions = null) =>
+    public Task<ImageResponse[]?> GetGameGrids(int gameId, string? dimensions = null) =>
         GetResponse($"grids/game/{gameId}?{BuildParameters(dimensions)}");
 
-    public Task<ImageResponse[]> GetGameHeroes(int gameId, string dimensions = null) =>
+    public Task<ImageResponse[]?> GetGameHeroes(int gameId, string? dimensions = null) =>
         GetResponse($"heroes/game/{gameId}?{BuildParameters(dimensions)}");
 
-    public Task<ImageResponse[]> GetGameLogos(int gameId, string dimensions = null) =>
+    public Task<ImageResponse[]?> GetGameLogos(int gameId, string? dimensions = null) =>
         GetResponse($"logos/game/{gameId}?{BuildParameters(dimensions)}");
 
     private sealed class ResponseWrapper<T>
     {
         public bool Success { get; set; }
-        public T[] Data { get; set; }
+        public T[]? Data { get; set; }
     }
 }
