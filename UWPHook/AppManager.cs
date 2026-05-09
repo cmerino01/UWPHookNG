@@ -173,43 +173,15 @@ static class AppManager
     /// <returns>List of installed UWP Apps</returns>
     public static List<string> GetInstalledApps()
     {
-        // Opt-out switch: set UWPHOOK_USE_POWERSHELL=1 to fall back to the legacy PowerShell
-        // discovery (used during the D12a transition for parity testing).
-        var usePowerShell = string.Equals(
-            Environment.GetEnvironmentVariable("UWPHOOK_USE_POWERSHELL"), "1", StringComparison.Ordinal);
-
-        if (!usePowerShell)
-        {
-            try
-            {
-                return UwpAppEnumerator.GetInstalledApps();
-            }
-            catch (Exception e)
-            {
-                Log.Error("WinRT app enumeration failed; falling back to PowerShell." + Environment.NewLine + e.Message, e.InnerException);
-                // Fall through to the PowerShell path on failure.
-            }
-        }
-
-        List<string>? result = null;
-        var assembly = Assembly.GetExecutingAssembly();
-        //Load the powershell script to get installed apps
-        var resourceName = "UWPHook.Resources.GetAUMIDScript.ps1";
         try
         {
-            using var stream = assembly.GetManifestResourceStream(resourceName)
-                ?? throw new InvalidOperationException($"Embedded resource '{resourceName}' not found.");
-            using var reader = new StreamReader(stream);
-            //Every entry is listed separated by ;
-            result = ScriptManager.RunScript(reader.ReadToEnd()).Split(';').ToList();
+            return UwpAppEnumerator.GetInstalledApps();
         }
         catch (Exception e)
         {
             Log.Error("Error trying to get installed apps on your PC " + Environment.NewLine + e.Message, e.InnerException);
             throw new Exception("Error trying to get installed apps on your PC " + Environment.NewLine + e.Message, e.InnerException);
         }
-
-        return result;
     }
 
     /// <summary>

@@ -109,13 +109,13 @@ public partial class GamesWindow : Window
             //I my self couldn't get this to work on neither Forza Horizon 3 or Halo 5 Forge, @AbGedreht reported it works tho
             if (Settings.Default.ChangeLanguage && !String.IsNullOrEmpty(Settings.Default.TargetLanguage))
             {
-                ScriptManager.RunScript("Set-WinUILanguageOverride " + Properties.Settings.Default.TargetLanguage);
+                PowerShellRunner.Run("Set-WinUILanguageOverride " + Properties.Settings.Default.TargetLanguage);
             }
 
             if (Settings.Default.ChangeResolution && !String.IsNullOrEmpty(Settings.Default.TargetResolution))
             {
                 var targetResolution = ExtractDimensions(Settings.Default.TargetResolution);
-                ScriptManager.RunScript("Set-DisplayResolution -Width " + targetResolution.Width + " - Height " + targetResolution.Height + " -Force");
+                PowerShellRunner.Run("Set-DisplayResolution -Width " + targetResolution.Width + " - Height " + targetResolution.Height + " -Force");
             }
 
             //The only other parameter Steam will send is the app AUMID
@@ -136,7 +136,7 @@ public partial class GamesWindow : Window
         {
             if (Settings.Default.ChangeLanguage && !String.IsNullOrEmpty(Settings.Default.TargetLanguage))
             {
-                ScriptManager.RunScript("Set-WinUILanguageOverride " + currentLanguage);
+                PowerShellRunner.Run("Set-WinUILanguageOverride " + currentLanguage);
             }
 
             //The user has probably finished using the app, so let's close UWPHook to keep the experience clean 
@@ -761,9 +761,6 @@ public partial class GamesWindow : Window
     {
         try
         {
-            //For some reason I need to enforce Set-ExecutionPolicy none
-            ScriptManager.RunScript("Set-ExecutionPolicy RemoteSigned -Scope Process -Force");
-
             //Get all installed apps on the system excluding frameworks
             List<string> installedApps = AppManager.GetInstalledApps();
 
