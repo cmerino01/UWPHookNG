@@ -33,7 +33,6 @@ public partial class GamesWindow : Window
     public GamesWindow()
     {
         InitializeComponent();
-        Log.Debug("Init GamesWindow");
         Apps = new AppEntryModel();
         var args = Environment.GetCommandLineArgs();
 
@@ -45,12 +44,15 @@ public partial class GamesWindow : Window
         Log.Logger = new LoggerConfiguration()
         .MinimumLevel.ControlledBy(levelSwitch)
         .WriteTo.File(path: loggerFilePath, rollOnFileSizeLimit: true, fileSizeLimitBytes: 10485760, retainedFileCountLimit: 5)
-        .WriteTo.Console()
+        .WriteTo.Debug() // visible in Visual Studio's Output -> Debug pane when running under the debugger
         .CreateLogger();
 
-        // Switch to Info by default to inform logger level in log file and switch to the correct log level
-        levelSwitch.MinimumLevel = Serilog.Events.LogEventLevel.Information;
+        // Default to Verbose so smoke tests capture detail; user can lower it via Settings.
+        levelSwitch.MinimumLevel = Serilog.Events.LogEventLevel.Verbose;
         SetLogLevel();
+
+        Log.Information("UWPHook {Version} starting. Log file: {LogPath}", fvi.ProductVersion, loggerFilePath);
+        Log.Debug("Init GamesWindow");
 
         // If null or 1, the app was launched normally
         if (args?.Length > 1)
@@ -469,9 +471,9 @@ public partial class GamesWindow : Window
                             {
                                 appid = ((int)GenerateSteamGridAppId(app.Name ?? string.Empty, exePath)),
                                 AppName = app.Name,
-                                Exe = exePath,
-                                StartDir = exeDir,
-                                LaunchOptions = app.Aumid + " " + app.Executable,
+                                Exe = "\"" + exePath + "\"",
+                                StartDir = "\"" + exeDir + "\"",
+                                LaunchOptions = app.Aumid + " \"" + app.Executable + "\"",
                                 AllowDesktopConfig = 1,
                                 AllowOverlay = 1,
                                 Icon = app.Icon,
