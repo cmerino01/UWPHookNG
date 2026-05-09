@@ -111,13 +111,12 @@ public partial class GamesWindow : Window
             //I my self couldn't get this to work on neither Forza Horizon 3 or Halo 5 Forge, @AbGedreht reported it works tho
             if (Settings.Default.ChangeLanguage && !String.IsNullOrEmpty(Settings.Default.TargetLanguage))
             {
-                PowerShellRunner.Run("Set-WinUILanguageOverride " + Properties.Settings.Default.TargetLanguage);
+                PowerShellRunner.SetWinUILanguageOverride(Properties.Settings.Default.TargetLanguage);
             }
 
             if (Settings.Default.ChangeResolution && !String.IsNullOrEmpty(Settings.Default.TargetResolution))
             {
-                var targetResolution = ExtractDimensions(Settings.Default.TargetResolution);
-                PowerShellRunner.Run("Set-DisplayResolution -Width " + targetResolution.Width + " - Height " + targetResolution.Height + " -Force");
+                PowerShellRunner.SetDisplayResolution(Settings.Default.TargetResolution);
             }
 
             //The only other parameter Steam will send is the app AUMID
@@ -138,7 +137,7 @@ public partial class GamesWindow : Window
         {
             if (Settings.Default.ChangeLanguage && !String.IsNullOrEmpty(Settings.Default.TargetLanguage))
             {
-                PowerShellRunner.Run("Set-WinUILanguageOverride " + currentLanguage);
+                PowerShellRunner.SetWinUILanguageOverride(currentLanguage);
             }
 
             //The user has probably finished using the app, so let's close UWPHook to keep the experience clean 
@@ -381,7 +380,8 @@ public partial class GamesWindow : Window
         {
             var users = SteamManager.GetUsers(steam_folder);
             var selected_apps = Apps.Entries.Where(app => app.Selected);
-            var processModule = Process.GetCurrentProcess().MainModule;
+            using var currentProcess = Process.GetCurrentProcess();
+            var processModule = currentProcess.MainModule;
             var exePath = processModule?.FileName ?? string.Empty;
             var exeDir = Path.GetDirectoryName(exePath);
 
@@ -609,50 +609,54 @@ public partial class GamesWindow : Window
     /// <returns></returns>
     private async Task<bool> RestartSteam(bool restartSteam)
     {
-        Func<Process?> getSteam = () => Process.GetProcessesByName("steam").SingleOrDefault();
-        Process? steam = getSteam();
+        // Helper that returns the Steam process or null. Caller is responsible for disposing.
+        static Process? FindSteam() => Process.GetProcessesByName("steam").SingleOrDefault();
 
-        if (steam != null)
+        using (Process? steam = FindSteam())
         {
-            string? steamExe = steam.MainModule?.FileName;
-            if (string.IsNullOrEmpty(steamExe))
+            if (steam != null)
             {
-                Log.Debug("Could not resolve Steam executable path");
-                return false;
-            }
-
-            //we always ask politely
-            Log.Debug("Requesting Steam shutdown");
-            Process.Start(steamExe, "-exitsteam");
-
-            bool restarted = false;
-            Stopwatch watch = new Stopwatch();
-            watch.Start();
-
-            //give it N seconds to sort itself out
-            int waitSeconds = 8;
-            while (!restarted || watch.Elapsed.TotalSeconds < waitSeconds)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(0.5f));
-                if (getSteam() == null)
+                string? steamExe = steam.MainModule?.FileName;
+                if (string.IsNullOrEmpty(steamExe))
                 {
-                    Log.Debug("Restarting Steam");
-                    Process.Start(steamExe);
-                    restarted = true;
-                    break;
+                    Log.Debug("Could not resolve Steam executable path");
+                    return false;
+                }
+
+                //we always ask politely
+                Log.Debug("Requesting Steam shutdown");
+                using (Process.Start(steamExe, "-exitsteam")) { }
+
+                bool restarted = false;
+                Stopwatch watch = new Stopwatch();
+                watch.Start();
+
+                //give it N seconds to sort itself out
+                int waitSeconds = 8;
+                while (!restarted || watch.Elapsed.TotalSeconds < waitSeconds)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(0.5f));
+                    using var current = FindSteam();
+                    if (current == null)
+                    {
+                        Log.Debug("Restarting Steam");
+                        using (Process.Start(steamExe)) { }
+                        restarted = true;
+                        break;
+                    }
+                }
+
+                if (!restarted)
+                {
+                    Log.Debug("Steam instance not restarted");
+                    MessageBox.Show("Failed to restart Steam, please launch it manually", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
                 }
             }
-
-            if (!restarted)
+            else
             {
-                Log.Debug("Steam instance not restarted");
-                MessageBox.Show("Failed to restart Steam, please launch it manually", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return false;
+                Log.Debug("Steam instance not found to be restarted");
             }
-        }
-        else
-        {
-            Log.Debug("Steam instance not found to be restarted");
         }
 
         return true;

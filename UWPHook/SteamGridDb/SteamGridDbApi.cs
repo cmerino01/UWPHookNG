@@ -18,7 +18,14 @@ internal sealed class SteamGridDbApi
         PropertyNameCaseInsensitive = true
     };
 
-    private readonly HttpClient _httpClient;
+    // Single process-wide HttpClient: avoids socket-handle leaks when many SteamGridDbApi
+    // instances are created during a multi-app export.
+    private static readonly HttpClient s_httpClient = new()
+    {
+        BaseAddress = new Uri(BaseUrl),
+    };
+
+    private readonly string _apiKey;
     private readonly Settings _settings;
 
     /// <summary>
@@ -28,11 +35,14 @@ internal sealed class SteamGridDbApi
     public SteamGridDbApi(string apiKey)
     {
         _settings = Settings.Default;
-        _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri(BaseUrl)
-        };
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+        _apiKey = apiKey;
+    }
+
+    private HttpRequestMessage NewRequest(string path)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+        return request;
     }
 
     /// <summary>
@@ -42,10 +52,13 @@ internal sealed class SteamGridDbApi
     /// <returns>Array of games corresponding to the provided name</returns>
     public async Task<GameResponse[]?> SearchGame(string gameName)
     {
-        var path = $"search/autocomplete/{gameName}";
+        // URL-encode the game name so titles containing '?', '#', '/', or '&' produce
+        // a well-formed request rather than corrupting the query.
+        var path = $"search/autocomplete/{Uri.EscapeDataString(gameName)}";
 
         GameResponse[]? games = null;
-        var response = await _httpClient.GetAsync(path);
+        using var request = NewRequest(path);
+        using var response = await s_httpClient.SendAsync(request);
 
         if (response.IsSuccessStatusCode)
         {
@@ -102,7 +115,8 @@ internal sealed class SteamGridDbApi
     /// </summary>
     public async Task<ImageResponse[]?> GetResponse(string url)
     {
-        var response = await _httpClient.GetAsync(url);
+        using var request = NewRequest(url);
+        using var response = await s_httpClient.SendAsync(request);
         ImageResponse[]? images = null;
 
         if (response.IsSuccessStatusCode)

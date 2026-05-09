@@ -76,7 +76,7 @@ static class AppManager
                 Log.Debug("PID is 0");
                 return false;
             }
-            Process.GetProcessById(runningProcessId);
+            Process.GetProcessById(runningProcessId).Dispose();
             Log.Debug("Process is running");
             return true;
         }
@@ -243,7 +243,7 @@ static class AppManager
         const int SW_SHOWDEFAULT = 10;
         */
 
-        var arrProcesses = Process.GetProcessById(runningProcessId);
+        using var arrProcesses = Process.GetProcessById(runningProcessId);
 
         // get the window handle
         IntPtr hWnd = arrProcesses.MainWindowHandle;
