@@ -35,7 +35,7 @@ public partial class SettingsWindow : Window
         streaming_toggle.IsChecked = Properties.Settings.Default.StreamMode;
         change_resolution_toggle.IsChecked = Properties.Settings.Default.ChangeResolution;
         logLevel_comboBox.SelectedIndex = logLevel_index;
-        steamgriddb_api_key.Text = Properties.Settings.Default.SteamGridDbApiKey;
+        steamgriddb_api_key.Text = ProtectedApiKey.GetSteamGridDbApiKey();
         style_comboBox.SelectedIndex = Properties.Settings.Default.SelectedSteamGridDB_Style;
         type_comboBox.SelectedIndex = Properties.Settings.Default.SelectedSteamGridDB_Type;
         nfsw_comboBox.SelectedIndex = Properties.Settings.Default.SelectedSteamGridDB_nfsw;
@@ -84,7 +84,7 @@ public partial class SettingsWindow : Window
         Properties.Settings.Default.ChangeResolution = change_resolution_toggle.IsChecked == true;
         Properties.Settings.Default.TargetResolution = resolution_comboBox.SelectedItem?.ToString() ?? string.Empty;
         Properties.Settings.Default.SelectedLogLevel = logLevel_comboBox.SelectedIndex.ToString();
-        Properties.Settings.Default.SteamGridDbApiKey = steamgriddb_api_key.Text.Trim('\r', '\n');
+        ProtectedApiKey.SetSteamGridDbApiKey(steamgriddb_api_key.Text.Trim('\r', '\n'));
         Properties.Settings.Default.SelectedSteamGridDB_Style = style_comboBox.SelectedIndex;
         Properties.Settings.Default.SelectedSteamGridDB_Type = type_comboBox.SelectedIndex;
         Properties.Settings.Default.SelectedSteamGridDB_nfsw = nfsw_comboBox.SelectedIndex;

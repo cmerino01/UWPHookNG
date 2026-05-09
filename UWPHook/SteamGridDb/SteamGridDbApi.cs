@@ -69,7 +69,7 @@ internal sealed class SteamGridDbApi
         {
             Log.Verbose("ERROR RESPONSE: " + response);
 
-            _settings.SteamGridDbApiKey = string.Empty;
+            ProtectedApiKey.SetSteamGridDbApiKey(string.Empty);
             _settings.Save();
 
             Log.Error("Warning: SteamGrid API Key Invalid. Please generate a new key and add it to settings.");

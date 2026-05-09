@@ -272,7 +272,7 @@ public partial class GamesWindow : Window
     /// <returns></returns>
     private async Task DownloadTempGridImages(string appName, string appTarget)
     {
-        SteamGridDbApi api = new SteamGridDbApi(Properties.Settings.Default.SteamGridDbApiKey);
+        SteamGridDbApi api = new SteamGridDbApi(ProtectedApiKey.GetSteamGridDbApiKey());
         string tmpGridDirectory = Path.GetTempPath() + "UWPHook\\tmp_grid\\";
         GameResponse[]? games = null;
 
@@ -386,7 +386,7 @@ public partial class GamesWindow : Window
             var exeDir = Path.GetDirectoryName(exePath);
 
             List<Task> gridImagesDownloadTasks = new List<Task>();
-            bool downloadGridImages = !String.IsNullOrEmpty(Properties.Settings.Default.SteamGridDbApiKey);
+            bool downloadGridImages = ProtectedApiKey.HasSteamGridDbApiKey();
             //To make things faster, decide icons and download grid images before looping users
             Log.Verbose("downloadGridImages: " + (downloadGridImages));
 
@@ -835,7 +835,7 @@ public partial class GamesWindow : Window
     {
         if (!Settings.Default.OfferedSteamGridDB)
         {
-            Settings.Default.SteamGridDbApiKey = "";
+            ProtectedApiKey.SetSteamGridDbApiKey(string.Empty);
             Settings.Default.OfferedSteamGridDB = true;
             Settings.Default.Save();
 
