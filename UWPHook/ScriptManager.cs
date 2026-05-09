@@ -1,51 +1,33 @@
-﻿using System.Collections.ObjectModel;
-using System.Management.Automation;
+﻿using System.Management.Automation;
 using System.Management.Automation.Runspaces;
 using System.Text;
 
-namespace UWPHook
+namespace UWPHook;
+
+/// <summary>
+/// Functions related to Windows PowerShell
+/// </summary>
+static class ScriptManager
 {
-    /// <summary>
-    /// Functions related to Windows powershell
-    /// </summary>
-    static class ScriptManager
+    public static string RunScript(string scriptText)
     {
-        public static string RunScript(string scriptText)
+        using var runspace = RunspaceFactory.CreateRunspace();
+        runspace.Open();
+
+        var pipeline = runspace.CreatePipeline();
+        pipeline.Commands.AddScript(scriptText);
+
+        // Format the output objects as strings for easy consumption.
+        pipeline.Commands.Add("Out-String");
+
+        var results = pipeline.Invoke();
+
+        var sb = new StringBuilder();
+        foreach (var obj in results)
         {
-            // create Powershell runspace
-            Runspace runspace = RunspaceFactory.CreateRunspace();
-
-            // open it
-            runspace.Open();
-
-            // create a pipeline and feed it the script text
-            Pipeline pipeline = runspace.CreatePipeline();
-            pipeline.Commands.AddScript(scriptText);
-
-            // add an extra command to transform the script
-            // output objects into nicely formatted strings
-
-            // remove this line to get the actual objects
-            // that the script returns. For example, the script
-
-            // "Get-Process" returns a collection
-            // of System.Diagnostics.Process instances.
-            pipeline.Commands.Add("Out-String");
-
-            // execute the script
-            Collection<PSObject> results = pipeline.Invoke();
-
-            // close the runspace
-            runspace.Close();
-
-            // convert the script result into a single string
-            StringBuilder stringBuilder = new StringBuilder();
-            foreach (PSObject obj in results)
-            {
-                stringBuilder.AppendLine(obj.ToString());
-            }
-
-            return stringBuilder.ToString();
+            sb.AppendLine(obj.ToString());
         }
+
+        return sb.ToString();
     }
 }

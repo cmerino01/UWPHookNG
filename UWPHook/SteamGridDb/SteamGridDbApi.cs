@@ -4,149 +4,131 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
-using UWPHook.Properties;
-using System.Diagnostics;
 using Serilog;
+using UWPHook.Properties;
 
-namespace UWPHook.SteamGridDb
+namespace UWPHook.SteamGridDb;
+
+internal sealed class SteamGridDbApi
 {
-    class SteamGridDbApi
+    private const string BaseUrl = "https://www.steamgriddb.com/api/v2/";
+
+    private static readonly JsonSerializerOptions s_jsonOptions = new()
     {
-        private const string BASE_URL = "https://www.steamgriddb.com/api/v2/";
+        PropertyNameCaseInsensitive = true
+    };
 
-        private static readonly JsonSerializerOptions s_jsonOptions = new()
+    private readonly HttpClient _httpClient;
+    private readonly Settings _settings;
+
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="apiKey">A SteamGridDB API key retrieved from https://www.steamgriddb.com/profile/preferences </param>
+    public SteamGridDbApi(string apiKey)
+    {
+        _settings = Settings.Default;
+        _httpClient = new HttpClient
         {
-            PropertyNameCaseInsensitive = true
+            BaseAddress = new Uri(BaseUrl)
         };
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+    }
 
-        private HttpClient httpClient;
-        private Settings settings;
+    /// <summary>
+    /// Search SteamGridDB for a game.
+    /// </summary>
+    /// <param name="gameName">Name of the game</param>
+    /// <returns>Array of games corresponding to the provided name</returns>
+    public async Task<GameResponse[]> SearchGame(string gameName)
+    {
+        var path = $"search/autocomplete/{gameName}";
 
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="apiKey"> An SteamGridDB api key retrieved from https://www.steamgriddb.com/profile/preferences </param>
-        public SteamGridDbApi(string apiKey)
+        GameResponse[] games = null;
+        var response = await _httpClient.GetAsync(path);
+
+        if (response.IsSuccessStatusCode)
         {
-            settings = Settings.Default;
-            httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(BASE_URL);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            var parsedResponse = await response.Content.ReadFromJsonAsync<ResponseWrapper<GameResponse>>(s_jsonOptions);
+            games = parsedResponse?.Data;
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Log.Verbose("ERROR RESPONSE: " + response);
+
+            _settings.SteamGridDbApiKey = string.Empty;
+            _settings.Save();
+
+            Log.Error("Warning: SteamGrid API Key Invalid. Please generate a new key and add it to settings.");
+            throw new TaskCanceledException("Warning: SteamGrid API Key Invalid. Please generate a new key and add it to settings.");
         }
 
-        /// <summary>
-        /// Search SteamGridDB for a game 
-        /// </summary>
-        /// <param name="gameName" type="String">Name of the game</param>
-        /// <returns>Array of games corresponding to the provided name</returns>
-        public async Task<GameResponse[]> SearchGame(string gameName)
-        {
-            string path = $"search/autocomplete/{gameName}";
+        return games;
+    }
 
-            GameResponse[] games = null;
-            HttpResponseMessage response = await httpClient.GetAsync(path);
-            
-            if (response.IsSuccessStatusCode)
+    /// <summary>
+    /// Builds the user-selected query parameters for SteamGridDB requests.
+    /// </summary>
+    /// <param name="dimensions">Comma separated list of resolutions, see https://www.steamgriddb.com/api/v2#tag/GRIDS</param>
+    /// <returns>The formatted query parameters</returns>
+    public string BuildParameters(string dimensions)
+    {
+        var result = string.Empty;
+        var style = _settings.SteamGridDB_Style[_settings.SelectedSteamGridDB_Style];
+        var type = _settings.SteamGridDB_Type[_settings.SelectedSteamGridDB_Type];
+        var nsfw = _settings.SteamGridDB_nfsw[_settings.SelectedSteamGridDB_nfsw];
+        var humor = _settings.SteamGridDB_Humor[_settings.SelectedSteamGridDB_Humor];
+
+        if (!string.IsNullOrEmpty(dimensions))
+            result += $"dimensions={dimensions}&";
+
+        if (type != "any")
+            result += $"types={type}&";
+
+        if (style != "any")
+            result += $"styles={style}&";
+
+        if (nsfw != "any")
+            result += $"nsfw={nsfw}&";
+
+        if (humor != "any")
+            result += $"humor={humor}&";
+
+        return result;
+    }
+
+    /// <summary>
+    /// Performs a request to a given url and returns the parsed image array.
+    /// </summary>
+    public async Task<ImageResponse[]> GetResponse(string url)
+    {
+        var response = await _httpClient.GetAsync(url);
+        ImageResponse[] images = null;
+
+        if (response.IsSuccessStatusCode)
+        {
+            var parsedResponse = await response.Content.ReadFromJsonAsync<ResponseWrapper<ImageResponse>>(s_jsonOptions);
+            if (parsedResponse is { Success: true })
             {
-                var parsedResponse = await response.Content.ReadFromJsonAsync<ResponseWrapper<GameResponse>>(s_jsonOptions);
-                games = parsedResponse.Data;
+                images = parsedResponse.Data;
             }
-            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-            {
-                Log.Verbose("ERROR RESPONSE: " + response.ToString());
-
-                settings.SteamGridDbApiKey = String.Empty;
-                settings.Save();
-
-                Log.Error("Warning: SteamGrid API Key Invalid. Please generate a new key and add it to settings.");
-                throw new TaskCanceledException("Warning: SteamGrid API Key Invalid. Please generate a new key and add it to settings.");
-            }
-
-            return games;
         }
 
-        /// <summary>
-        /// Method responsible for transforming user selected settings
-        /// into a suitable parameter list for SteamGridDB requests
-        /// </summary>
-        /// <param name="dimensions">Comma separated list of resolutions, see https://www.steamgriddb.com/api/v2#tag/GRIDS</param>
-        /// <returns>A String with the formatted parameters</returns>
-        public string BuildParameters(string dimensions)
-        {
-            String result = String.Empty;
-            var style = settings.SteamGridDB_Style[settings.SelectedSteamGridDB_Style];
-            var type = settings.SteamGridDB_Type[settings.SelectedSteamGridDB_Type];
-            var nsfw = settings.SteamGridDB_nfsw[settings.SelectedSteamGridDB_nfsw];
-            var humor = settings.SteamGridDB_Humor[settings.SelectedSteamGridDB_Humor];
+        return images;
+    }
 
-            if (!String.IsNullOrEmpty(dimensions))
-                result += $"dimensions={dimensions}&";
+    public Task<ImageResponse[]> GetGameGrids(int gameId, string dimensions = null) =>
+        GetResponse($"grids/game/{gameId}?{BuildParameters(dimensions)}");
 
-            if (type != "any") 
-                result += $"types={type}&";
+    public Task<ImageResponse[]> GetGameHeroes(int gameId, string dimensions = null) =>
+        GetResponse($"heroes/game/{gameId}?{BuildParameters(dimensions)}");
 
-            if (style != "any")
-                result += $"styles={style}&";
+    public Task<ImageResponse[]> GetGameLogos(int gameId, string dimensions = null) =>
+        GetResponse($"logos/game/{gameId}?{BuildParameters(dimensions)}");
 
-            if (nsfw != "any")
-                result += $"nsfw={nsfw}&";
-
-            if (humor != "any")
-                result += $"humor={humor}&";
-
-            return result;
-        }
-
-        /// <summary>
-        /// Performs a request on a given url
-        /// </summary>
-        /// <param name="url">The url to perform the request</param>
-        /// <returns>An array of ImageResponse with their urls</returns>
-        public async Task<ImageResponse[]> getResponse(string url)
-        {
-            HttpResponseMessage response = await httpClient.GetAsync(url);
-            ImageResponse[] images = null;
-
-            if (response.IsSuccessStatusCode)
-            {
-                var parsedResponse = await response.Content.ReadFromJsonAsync<ResponseWrapper<ImageResponse>>(s_jsonOptions);
-                if (parsedResponse != null)
-                {
-                    if (parsedResponse.Success)
-                    {
-                        images = parsedResponse.Data;
-                    }
-                }
-            }
-
-            return images;
-        }
-
-        public async Task<ImageResponse[]> GetGameGrids(int gameId, string dimensions = null)
-        {
-            string path = $"grids/game/{gameId}?{BuildParameters(dimensions)}";
-
-            return await getResponse(path);
-        }
-
-        public async Task<ImageResponse[]> GetGameHeroes(int gameId, string dimensions = null)
-        {
-            string path = $"heroes/game/{gameId}?{BuildParameters(dimensions)}";
-
-            return await getResponse(path);
-        }
-
-        public async Task<ImageResponse[]> GetGameLogos(int gameId, string dimensions = null)
-        {
-            string path = $"logos/game/{gameId}?{BuildParameters(dimensions)}";
-
-            return await getResponse(path);
-        }
-
-        private class ResponseWrapper<T>
-        {
-            public bool Success { get; set; }
-            public T[] Data { get; set; }
-        }
+    private sealed class ResponseWrapper<T>
+    {
+        public bool Success { get; set; }
+        public T[] Data { get; set; }
     }
 }

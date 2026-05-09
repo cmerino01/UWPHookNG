@@ -1,10 +1,9 @@
-﻿namespace UWPHook.SteamGridDb
+﻿namespace UWPHook.SteamGridDb;
+
+/// <summary>
+/// Represents an image from SteamGridDB.
+/// </summary>
+public sealed class ImageResponse
 {
-    /// <summary>
-    /// Represents an image from SteamGridDB
-    /// </summary>
-    public class ImageResponse
-    {
-        public string Url { get; set; }
-    }
+    public string Url { get; set; }
 }
