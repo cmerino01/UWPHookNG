@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Windows;
 
@@ -9,6 +10,9 @@ using System.Windows;
 // Setting ComVisible to false makes the types in this assembly not visible
 // to COM components.
 [assembly: ComVisible(false)]
+
+// Expose internals to the test assembly so we can lock down helper APIs without making them public.
+[assembly: InternalsVisibleTo("UWPHook.Tests")]
 
 [assembly: ThemeInfo(
     ResourceDictionaryLocation.None,           // theme-specific resource dictionaries

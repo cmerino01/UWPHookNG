@@ -158,22 +158,6 @@ public partial class GamesWindow : Window
         }
         throw new FormatException("Invalid resolution format.");
     }
-    
-    /// <summary>
-    /// Generates a CRC32 hash expected by Steam to link an image with a game in the library
-    /// See https://blog.yo1.dog/calculate-id-for-non-steam-games-js/ for an example
-    /// </summary>
-    /// <param name="appName">The name of the executable to be displayed</param>
-    /// <param name="appTarget">The executable target path</param>
-    /// <returns></returns>
-    private UInt64 GenerateSteamGridAppId(string appName, string appTarget)
-    {
-        byte[] nameTargetBytes = Encoding.UTF8.GetBytes(appTarget + appName + "");
-        UInt64 crc = Crc32Algorithm.Compute(nameTargetBytes);
-        UInt64 gameId = crc | 0x80000000;
-
-        return gameId;
-    }
 
     /// <summary>
     /// Task responsible for triggering the export, blocks the UI, and shows a message
@@ -306,7 +290,7 @@ public partial class GamesWindow : Window
         {
             var game = games[0];
             Log.Verbose("Detected Game: " + game.ToString());
-            UInt64 gameId = GenerateSteamGridAppId(appName, appTarget);
+            UInt64 gameId = SteamShortcutId.Generate(appName, appTarget);
 
             SafellyCreateTmpGridDirectory(tmpGridDirectory);
 
@@ -462,14 +446,14 @@ public partial class GamesWindow : Window
 
                                     string[] images = Directory.GetFiles(tmpGridDirectory);
 
-                                    UInt64 gameId = GenerateSteamGridAppId(app.Name ?? string.Empty, exePath);
+                                    UInt64 gameId = SteamShortcutId.Generate(app.Name ?? string.Empty, exePath);
                                     app.Icon = PersistAppIcon(app, tmpGridDirectory + gameId + "_logo.png");
                                 });
                             }
 
                             VDFEntry newApp = new VDFEntry()
                             {
-                                appid = ((int)GenerateSteamGridAppId(app.Name ?? string.Empty, exePath)),
+                                appid = ((int)SteamShortcutId.Generate(app.Name ?? string.Empty, exePath)),
                                 AppName = app.Name,
                                 Exe = "\"" + exePath + "\"",
                                 StartDir = "\"" + exeDir + "\"",
