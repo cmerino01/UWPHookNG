@@ -1,4 +1,4 @@
-name: build
+﻿name: build
 
 on:
   push:
@@ -27,6 +27,16 @@ jobs:
 
       - name: Build
         run: dotnet build UWPHook.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test tests/UWPHook.Tests/UWPHook.Tests.csproj -c Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: tests/UWPHook.Tests/TestResults/
 
       - name: Publish (win-x64, self-contained, single-file)
         run: dotnet publish UWPHook/UWPHook.csproj -c Release -r win-x64 --self-contained true -o publish

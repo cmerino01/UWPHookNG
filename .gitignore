@@ -269,3 +269,5 @@ __pycache__/
 ./Setup/Setup-cache
 Setup/UWPHook.exe
 *.exe
+*.commit_msg.txt
+.commit_msg.txt

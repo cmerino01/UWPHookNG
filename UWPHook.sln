@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UWPHook", "UWPHook\UWPHook.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VDFParser", "VDFParser\VDFParser.csproj", "{ACEB6225-1EFB-4C41-80F7-83F1C120154A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UWPHook.Tests", "tests\UWPHook.Tests\UWPHook.Tests.csproj", "{88B82303-9D01-4A5B-81F7-758E871FE763}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -56,9 +60,30 @@ Global
 		{ACEB6225-1EFB-4C41-80F7-83F1C120154A}.Release|x64.Build.0 = Release|Any CPU
 		{ACEB6225-1EFB-4C41-80F7-83F1C120154A}.Release|x86.ActiveCfg = Release|Any CPU
 		{ACEB6225-1EFB-4C41-80F7-83F1C120154A}.Release|x86.Build.0 = Release|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.Debug|x64.Build.0 = Debug|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.Debug|x86.Build.0 = Debug|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.DefaultBuild|Any CPU.ActiveCfg = Debug|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.DefaultBuild|Any CPU.Build.0 = Debug|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.DefaultBuild|x64.ActiveCfg = Debug|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.DefaultBuild|x64.Build.0 = Debug|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.DefaultBuild|x86.ActiveCfg = Debug|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.DefaultBuild|x86.Build.0 = Debug|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.Release|Any CPU.Build.0 = Release|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.Release|x64.ActiveCfg = Release|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.Release|x64.Build.0 = Release|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.Release|x86.ActiveCfg = Release|Any CPU
+		{88B82303-9D01-4A5B-81F7-758E871FE763}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{88B82303-9D01-4A5B-81F7-758E871FE763} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8F60407F-0197-459E-B674-3CDDF6EF79A1}
