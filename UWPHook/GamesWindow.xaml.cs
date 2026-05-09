@@ -47,8 +47,8 @@ public partial class GamesWindow : Window
         .WriteTo.Debug() // visible in Visual Studio's Output -> Debug pane when running under the debugger
         .CreateLogger();
 
-        // Default to Verbose so smoke tests capture detail; user can lower it via Settings.
-        levelSwitch.MinimumLevel = Serilog.Events.LogEventLevel.Verbose;
+        // Default to Information; users can dial up via Settings (Debug/Trace) when troubleshooting.
+        levelSwitch.MinimumLevel = Serilog.Events.LogEventLevel.Information;
         SetLogLevel();
 
         Log.Information("UWPHook {Version} starting. Log file: {LogPath}", fvi.ProductVersion, loggerFilePath);
