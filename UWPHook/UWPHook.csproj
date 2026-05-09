@@ -12,7 +12,7 @@
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<ApplicationIcon>Resources\hook2.ico</ApplicationIcon>
 		<PublishSingleFile>true</PublishSingleFile>
-		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
 		<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
 
 		<Product>UWPHook</Product>

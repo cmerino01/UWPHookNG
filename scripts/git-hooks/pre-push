@@ -1,0 +1,2 @@
+#!/bin/sh
+exec pwsh -NoProfile -ExecutionPolicy Bypass -File "$(dirname "$0")/pre-push.ps1" "$@" 2>/dev/null || exec powershell -NoProfile -ExecutionPolicy Bypass -File "$(dirname "$0")/pre-push.ps1" "$@"
