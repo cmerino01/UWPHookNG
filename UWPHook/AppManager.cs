@@ -168,11 +168,29 @@ static class AppManager
     }
 
     /// <summary>
-    /// Gets a list of installed UWP Apps on the system, containing each app name + AUMID + executable path, separated by '|' 
+    /// Gets a list of installed UWP Apps on the system, containing each app name + AUMID + executable path, separated by '|'
     /// </summary>
     /// <returns>List of installed UWP Apps</returns>
     public static List<string> GetInstalledApps()
     {
+        // Opt-out switch: set UWPHOOK_USE_POWERSHELL=1 to fall back to the legacy PowerShell
+        // discovery (used during the D12a transition for parity testing).
+        var usePowerShell = string.Equals(
+            Environment.GetEnvironmentVariable("UWPHOOK_USE_POWERSHELL"), "1", StringComparison.Ordinal);
+
+        if (!usePowerShell)
+        {
+            try
+            {
+                return UwpAppEnumerator.GetInstalledApps();
+            }
+            catch (Exception e)
+            {
+                Log.Error("WinRT app enumeration failed; falling back to PowerShell." + Environment.NewLine + e.Message, e.InnerException);
+                // Fall through to the PowerShell path on failure.
+            }
+        }
+
         List<string>? result = null;
         var assembly = Assembly.GetExecutingAssembly();
         //Load the powershell script to get installed apps

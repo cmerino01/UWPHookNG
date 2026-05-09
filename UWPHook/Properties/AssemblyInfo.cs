@@ -3,8 +3,8 @@ using System.Runtime.Versioning;
 using System.Windows;
 
 // UWPHook is Windows-only by design (UWP discovery, Steam shortcuts, System.Drawing GDI+, WMI).
-// Declaring it here removes a flood of CA1416 warnings without changing behavior.
-[assembly: SupportedOSPlatform("windows6.1")]
+// We require Windows 10 (1809+) for the WinRT package enumeration APIs.
+[assembly: SupportedOSPlatform("windows10.0.17763.0")]
 
 // Setting ComVisible to false makes the types in this assembly not visible
 // to COM components.
