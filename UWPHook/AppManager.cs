@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Management;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -126,24 +125,42 @@ static class AppManager
     }
 
     /// <summary>
-    /// Find process path with their dedicated pid
+    /// Snapshot of currently running processes mapped by executable name.
     /// </summary>
-    /// <returns>Map of processes to their path and pid. Any process in this object may have already terminated</returns>
+    /// <returns>Map of process executable name -> (full path, pid). Any process here may have already terminated.</returns>
     private static Dictionary<string, (string Path, int Pid)> GetProcess()
     {
-        var result = new Dictionary<string, (string Path, int Pid)>();
+        var result = new Dictionary<string, (string Path, int Pid)>(System.StringComparer.OrdinalIgnoreCase);
 
-        using (var searcher = new ManagementObjectSearcher("select processid, Name, ExecutablePath from win32_process"))
+        foreach (var process in Process.GetProcesses())
         {
-            foreach (var process in searcher.Get())
+            try
             {
-                string? processName = Convert.ToString(process.Properties["Name"].Value);
-                int processId = Convert.ToInt32(process.Properties["processid"].Value);
-                string? processPath = Convert.ToString(process.Properties["ExecutablePath"].Value);
+                var name = process.ProcessName;
+                if (string.IsNullOrWhiteSpace(name) || result.ContainsKey(name + ".exe"))
+                {
+                    continue;
+                }
 
-                if (string.IsNullOrWhiteSpace(processName) || result.ContainsKey(processName)) continue;
+                string path = string.Empty;
+                try
+                {
+                    path = process.MainModule?.FileName ?? string.Empty;
+                }
+                catch
+                {
+                    // Access denied for protected processes; ignore and keep an empty path.
+                }
 
-                result.Add(processName, (processPath ?? string.Empty, processId));
+                result[name + ".exe"] = (path, process.Id);
+            }
+            catch
+            {
+                // Process exited between enumeration and inspection.
+            }
+            finally
+            {
+                process.Dispose();
             }
         }
 

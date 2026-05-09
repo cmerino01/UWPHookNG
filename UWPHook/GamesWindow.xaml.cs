@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -219,36 +218,24 @@ public partial class GamesWindow : Window
     private static readonly HttpClient s_imageHttpClient = new HttpClient();
 
     /// <summary>
-    /// Downloads the given image in the url to a given path in a given format
+    /// Downloads the given image url to the destination path. The image bytes are written
+    /// straight to disk; SteamGridDB already serves PNG-encoded data so no re-encode is needed.
     /// </summary>
     /// <param name="imageUrl">The url for the image</param>
     /// <param name="destinationFilename">Path to store the image</param>
-    /// <param name="format"></param>
-    /// <returns></returns>
-    private async Task SaveImage(string imageUrl, string destinationFilename, ImageFormat format)
+    private async Task SaveImage(string imageUrl, string destinationFilename)
     {
-        Stream? stream = null;
         try
         {
-            stream = await s_imageHttpClient.GetStreamAsync(imageUrl);
+            await using var src = await s_imageHttpClient.GetStreamAsync(imageUrl);
+            await using var dst = File.Create(destinationFilename);
+            await src.CopyToAsync(dst);
         }
         catch (Exception exception)
         {
             Log.Error(exception.Message);
             //Image with error?
             //Skip for now
-        }
-
-        if (stream != null)
-        {
-            using (stream)
-            {
-                await Task.Run(() =>
-                {
-                    using var bitmap = new Bitmap(stream);
-                    bitmap.Save(destinationFilename, format);
-                });
-            }
         }
     }
 
@@ -346,28 +333,28 @@ public partial class GamesWindow : Window
             {
                 var grid = gridsHorizontal[0];
                 if (grid.Url is not null)
-                    saveImagesTasks.Add(SaveImage(grid.Url, $"{tmpGridDirectory}\\{gameId}.png", ImageFormat.Png));
+                    saveImagesTasks.Add(SaveImage(grid.Url, $"{tmpGridDirectory}\\{gameId}.png"));
             }
 
             if (gridsVertical != null && gridsVertical.Length > 0)
             {
                 var grid = gridsVertical[0];
                 if (grid.Url is not null)
-                    saveImagesTasks.Add(SaveImage(grid.Url, $"{tmpGridDirectory}\\{gameId}p.png", ImageFormat.Png));
+                    saveImagesTasks.Add(SaveImage(grid.Url, $"{tmpGridDirectory}\\{gameId}p.png"));
             }
 
             if (heroes != null && heroes.Length > 0)
             {
                 var hero = heroes[0];
                 if (hero.Url is not null)
-                    saveImagesTasks.Add(SaveImage(hero.Url, $"{tmpGridDirectory}\\{gameId}_hero.png", ImageFormat.Png));
+                    saveImagesTasks.Add(SaveImage(hero.Url, $"{tmpGridDirectory}\\{gameId}_hero.png"));
             }
 
             if (logos != null && logos.Length > 0)
             {
                 var logo = logos[0];
                 if (logo.Url is not null)
-                    saveImagesTasks.Add(SaveImage(logo.Url, $"{tmpGridDirectory}\\{gameId}_logo.png", ImageFormat.Png));
+                    saveImagesTasks.Add(SaveImage(logo.Url, $"{tmpGridDirectory}\\{gameId}_logo.png"));
             }
 
             await Task.WhenAll(saveImagesTasks);
