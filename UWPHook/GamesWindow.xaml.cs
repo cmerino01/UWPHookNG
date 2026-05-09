@@ -11,6 +11,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -216,6 +217,8 @@ namespace UWPHook
             MessageBox.Show(msg, "UWPHook", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
+        private static readonly HttpClient s_imageHttpClient = new HttpClient();
+
         /// <summary>
         /// Downloads the given image in the url to a given path in a given format
         /// </summary>
@@ -225,30 +228,29 @@ namespace UWPHook
         /// <returns></returns>
         private async Task SaveImage(string imageUrl, string destinationFilename, ImageFormat format)
         {
-            await Task.Run(() =>
+            Stream stream = null;
+            try
             {
-                WebClient client = new WebClient();
-                Stream stream = null;
-                try
-                {
-                    stream = client.OpenRead(imageUrl);
-                }
-                catch (Exception exception)
-                {
-                    Log.Error(exception.Message);
-                    //Image with error?
-                    //Skip for now
-                }
+                stream = await s_imageHttpClient.GetStreamAsync(imageUrl);
+            }
+            catch (Exception exception)
+            {
+                Log.Error(exception.Message);
+                //Image with error?
+                //Skip for now
+            }
 
-                if (stream != null)
+            if (stream != null)
+            {
+                using (stream)
                 {
-                    Bitmap bitmap; bitmap = new Bitmap(stream);
-                    bitmap.Save(destinationFilename, format);
-                    stream.Flush();
-                    stream.Close();
-                    client.Dispose();
+                    await Task.Run(() =>
+                    {
+                        using var bitmap = new Bitmap(stream);
+                        bitmap.Save(destinationFilename, format);
+                    });
                 }
-            });
+            }
         }
 
         /// <summary>
@@ -618,7 +620,7 @@ namespace UWPHook
             catch (System.IO.IOException e)
             {
                 Log.Warning(e, "Could not copy icon " + app.Icon);
-                throw e;
+                throw;
             }
 
             return dest_file;

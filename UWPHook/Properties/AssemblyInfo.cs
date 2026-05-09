@@ -2,7 +2,12 @@
 using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Windows;
+
+// UWPHook is Windows-only by design (UWP discovery, Steam shortcuts, System.Drawing GDI+, WMI).
+// Declaring it here removes a flood of CA1416 warnings without changing behavior.
+[assembly: SupportedOSPlatform("windows6.1")]
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information

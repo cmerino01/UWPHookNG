@@ -56,13 +56,43 @@ Special thanks to @FusRoDah061 for implementing the base feature!
   - Please also paste the contents of the file `%appdata%Roaming\Briano\UWPHook\application.log` so i can try to understand better the problem.
 ----------
 
-# Building
+# Building (UWPHookNG)
 
-- Clone project or forked project.
-- Install Visual Studio 2022 with .NET Framework 4.8.
-- Install [SharpSteam by BrianLima](https://github.com/BrianLima/SharpSteam/releases/) and [VDFParser](https://github.com/brianlima/VDFParser) and build.
-- If the project asks for the references for VDFParser and Sharpsteam, point it to the most recent build.
-- Press run!
+This fork targets modern .NET — no .NET Framework or external SharpSteam clone required.
+
+**Requirements**
+
+- Windows 10 or 11 (x64)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (or any newer SDK that can target `net10.0-windows`)
+- Visual Studio 2022 17.12+ / Visual Studio 2026 (optional — the .NET CLI alone is sufficient)
+
+**Clone with submodules** (this repo uses a git submodule for `VDFParser`):
+
+```powershell
+git clone --recurse-submodules https://github.com/cmerino01/UWPHookNG.git
+```
+
+If you already cloned without `--recurse-submodules`:
+
+```powershell
+git submodule update --init --recursive
+```
+
+**Build**
+
+```powershell
+dotnet build UWPHook.sln -c Release
+```
+
+Or open `UWPHook.sln` in Visual Studio and build/run normally.
+
+**Publish a single-file exe**
+
+```powershell
+dotnet publish UWPHook\UWPHook.csproj -c Release -r win-x64 --self-contained true
+```
+
+Output: `UWPHook\bin\Release\net10.0-windows\win-x64\publish\UWPHook.exe`
 
 ## Installer 
 

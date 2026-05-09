@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>VDFParser</RootNamespace>
+    <AssemblyName>VDFParser</AssemblyName>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\external\VDFParser\VDFParser\Extensions.cs" Link="Extensions.cs" />
+    <Compile Include="..\external\VDFParser\VDFParser\Machines\VDFFieldsSM.cs" Link="Machines\VDFFieldsSM.cs" />
+    <Compile Include="..\external\VDFParser\VDFParser\Machines\VDFIndexedArraySM.cs" Link="Machines\VDFIndexedArraySM.cs" />
+    <Compile Include="..\external\VDFParser\VDFParser\Machines\VDFSM.cs" Link="Machines\VDFSM.cs" />
+    <Compile Include="..\external\VDFParser\VDFParser\Models\VDFEntry.cs" Link="Models\VDFEntry.cs" />
+    <Compile Include="..\external\VDFParser\VDFParser\Models\VDFField.cs" Link="Models\VDFField.cs" />
+    <Compile Include="..\external\VDFParser\VDFParser\Models\VDFFieldType.cs" Link="Models\VDFFieldType.cs" />
+    <Compile Include="..\external\VDFParser\VDFParser\VDFParser.cs" Link="VDFParser.cs" />
+    <Compile Include="..\external\VDFParser\VDFParser\Exceptions.cs" Link="Exceptions.cs" />
+    <Compile Include="..\external\VDFParser\VDFParser\VDFSerializer.cs" Link="VDFSerializer.cs" />
+    <Compile Include="..\external\VDFParser\VDFParser\Shared.cs" Link="Shared.cs" />
+    <Compile Include="..\external\VDFParser\VDFParser\GenericWriter.cs" Link="GenericWriter.cs" />
+  </ItemGroup>
+
+</Project>
